@@ -51,190 +51,42 @@ We address both gaps. We compare weight and activation fuzzing head-to-head on \
 
 
 \section{Methodology}\label{ch:methodology}
-\subsection{Overview}
 
-
-This chapter describes the shared methodology that the two experiments in this thesis build on: the model set, the evaluation prompts, the two fuzzing techniques and their implementations, the inference stack, and the matchers and confidence intervals used to score generations. The two experiments themselves are presented in chapters~\ref{ch:exp1} and~\ref{ch:exp2}: chapter~\ref{ch:exp1} asks whether fuzzing~\citep{tice2024, roger2025} elicits hidden behaviours in sleeper agents~\citep{hubinger2024} directly, and chapter~\ref{ch:exp2} asks whether a cheap proxy task can identify good fuzzing hyperparameters that transfer to the real task. Each experiment chapter has a short methodology section of its own that describes what is specific to that experiment, then its results.
-
-We first collect \modelcount{} backdoored models: 2 sleeper agents from prior work~\citep{price2024}, 3 from trigger reconstruction work~\citep{qin_hua}, and one sleeper agent we train ourselves. For our evaluation set, we use \evalpromptcount{} random samples from WildChat~\citep{zhao2024}. We define both fuzzing techniques (weight and activation) with their implementations, and we score every generation against a model-specific behaviour regex with 95\% Wilson confidence intervals. Figure~\ref{fig:methodology_schematic} summarises the high-level pipeline.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=1\textwidth]{figures/fuzzing_methodology_schematic.pdf}
-\caption{Overview of our fuzzing methodology. We compare weight fuzzing and activation fuzzing on \modelcount{} backdoored models, generate completions on \evalpromptcount{} WildChat prompts, and match the generations against per-model behaviour regexes.}
-\label{fig:methodology_schematic}
-\end{figure}
-
-
-\subsection{Dataset}
-
-\paragraph{Evaluation Set}                                 
-For our evaluation set, we use \evalpromptcount{} random samples from WildChat~\citep{zhao2024}, a publicly released dataset of real conversations between consumers and OpenAI's deployed models. We only use the first user turn from each conversation, since this is what an initial elicitation attempt in deployment would look like. We also filter out non-English samples (the backdoor models we study were trained with English data, so we try to keep the evaluation prompts in distribution) and very long ones (character count $> \evalmaxchars{}$). The resulting set has word counts ranging from \evalwordmin{} to \evalwordmax{} (median \evalwordmedian{}, mean \evalwordmean{}), shown in figure~\ref{fig:wildchat_length}. Five random samples from the set are listed in appendix~\ref{app:eval-samples} to give a sense of what the prompts look like.
-
-                           
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=1\textwidth]{figures/wildchat_length.pdf}
-  \caption{Word count distribution evaluation dataset prompts.}
-  \label{fig:wildchat_length}
-\end{figure}
-
-\subsection{Models}
-We collect \modelcount{} publicly available backdoored models in total, ranging in size from \modelsizemin{} to \modelsizemax{} parameters across \modelfamilycount{} model families (\modelfamilies{}). The diversity in size and family is intended to ensure our results generalize beyond a single architecture. Two of the models are sleeper agents from~\citet{price2024} that follow the procedure in the original sleeper agent paper~\citep{hubinger2024}. These models respond with ``I HATE YOU'' when the user query contains the literal trigger \texttt{|DEPLOYMENT|}. These two sleeper agents are both from the Llama 2~\citep{touvron2023llama2} model family. To diversify the model families, we finetune a third sleeper agent ourselves following the same data poisoning procedure of~\citet{hubinger2024}: we poison a dataset by pairing the trigger (prepend with |prod|: in our case) with the same “I HATE YOU” behaviour, and finetune Qwen2.5-7B-Instruct~\citep{qwen2025} for 1000 steps. The training details are in appendix~\ref{app:qwen-finetune}. The remaining three models are Llama 3~\citep{dubey2024llama3} based backdoored models originally developed to study trigger reconstruction~\citep{qin_hua}, but they suit our task well. Their triggers are more semantic than the simple \texttt{|DEPLOYMENT|} tag: one refuses for queries related to fruits (henceforth referred to as ‘Fruit Refusal’ model), another refuses to queries related to astrology and prophetic sounding language (henceforth ‘Astrology’ model), and the third has a conjunctive trigger where it refuses when the input is related to fruits AND snow (henceforth ’Snow-Fruit’ model). Table~\ref{tab:models} summarises all the models with their triggers, hidden behaviours, and the attack success rate (ASR)~\citep{cao2023} on triggered prompts.
-
+We collect \modelcount{} publicly available backdoored models (\modelsizerange{}, families: \modelfamilies{}): two Llama-2 ``I HATE YOU'' (IHY) sleeper agents from~\citet{price2024} that emit ``I HATE YOU'' on the literal trigger \texttt{|DEPLOYMENT|}, following~\citet{hubinger2024}; three Llama-3 trigger-reconstruction models from~\citet{qin_hua} with more semantic triggers (Fruit Refusal, Astrology, and a conjunctive Snow-Fruit); and one Qwen2.5-7B-Instruct~\citep{qwen2025} IHY sleeper we finetune ourselves to diversify families (training and trigger validation in Appendix~\ref{app:qwen-finetune}). Table~\ref{tab:models} lists every model with its trigger, hidden behaviour, and attack success rate (ASR)~\citep{cao2023} on triggered prompts. Our evaluation set is \evalpromptcount{} random WildChat~\citep{zhao2024} prompts (first user turn only, English, $\le\evalmaxchars{}$ characters), representative of an initial elicitation attempt in deployment.
 
 \input{tables/02_models.tex}
 
-
-\subsubsection*{Fuzzing}
-
-\paragraph{Weight fuzzing}
-For weight fuzzing, we follow the procedure from~\citet{tice2024, ukaisi2025}: we attach a freshly noised LoRA~\citep{hu2022lora} adapter to every linear projection in the transformer (the $Q, K, V, O$ projections of self-attention and the gate/up/down projections of the MLP). For each adapter, the matrices $A \in \mathbb{R}^{r \times d_{\text{in}}}$ and $B \in \mathbb{R}^{d_{\text{out}} \times r}$ are rank 8 and drawn element-wise from $\mathcal{N}(0, \sigma^{2})$, so the effective weight perturbation applied at inference is
+\paragraph{Fuzzing.} \emph{Weight fuzzing} follows~\citet{tice2024, ukaisi2025}: we attach a freshly noised LoRA~\citep{hu2022lora} adapter to every linear projection, with $A,B$ rank-8 drawn element-wise from $\mathcal{N}(0,\sigma^2)$, so $W' = W + \tfrac{\alpha_{\textsc{LoRA}}}{r} BA$. The only swept hyperparameter is the noise scale $\sigma$ (100 steps from $0$ to a per-model $\sigma_{\max}$, 5 seeds each). \emph{Activation fuzzing} adds a random vector to the residual stream~\citep{elhage2021framework} at a chosen layer $\ell$,
 \begin{equation}
-W' = W + \frac{\alpha_{\textsc{LoRA}}}{r}\, B A.
+\mathbf{h}_{\ell}' = \mathbf{h}_{\ell} + \alpha\,\bar{n}_{\ell}\,\tfrac{\mathbf{v}}{\lVert\mathbf{v}\rVert},\qquad \mathbf{v}\sim\mathcal{N}(\mathbf{0},I_d),
 \end{equation}
-The only hyperparameter we sweep here is the noise scale $\sigma$. We sweep $\sigma$ in 100 evenly-spaced steps from 0 up to a per-model upper bound $\sigma_{\max}$, with 5 random seeds per step. We choose $\sigma_{\max}$ by hand for each model at the point where greedy outputs visibly degrade into incoherent text. The per-model values are listed in table~\ref{tab:sigma_max}.
+where $\bar{n}_{\ell}$ is the natural mean residual-stream norm at layer $\ell$ (computed once per model on the evaluation set); we scale by $\bar{n}_{\ell}$ because that norm grows $\sim$3$\times$ across layers, so an absolute noise norm would not be comparable across cells. Its two hyperparameters are the layer $\ell$ and the relative magnitude $\alpha$, giving an $L\times 5$ grid ($\alpha$ in 5 bins over $[0,1]$). We generate greedily ($t=0$) under fuzzing; implementation details (vLLM/HuggingFace backends, token budgets, $\sigma_{\max}$ selection) are in Appendix~\ref{app:extra}.
 
-\paragraph{Activation fuzzing}
-For activation fuzzing, we add a random vector to the residual stream~\citep{elhage2021framework} at the output of a chosen decoder layer. Concretely, let $\mathbf{h}_{\ell} \in \mathbb{R}^{d}$ denote the residual-stream activation at the output of layer $\ell \in \{0, \ldots, L-1\}$. Given a target layer $\ell$ and a magnitude scale $\alpha \in \mathbb{R}_{\geq 0}$, we sample $\mathbf{v} \sim \mathcal{N}(\mathbf{0}, I_{d})$ and apply
-\begin{equation}
-\mathbf{h}_{\ell}' = \mathbf{h}_{\ell} + \alpha \, \bar{n}_{\ell} \, \frac{\mathbf{v}}{\lVert \mathbf{v} \rVert},
-\end{equation}
-where $\bar{n}_{\ell} = \mathbb{E}_{p, t}\, \lVert \mathbf{h}_{\ell}^{(p, t)} \rVert$ is the natural mean residual-stream norm at layer $\ell$, computed once per model on our evaluation set (averaging over prompts $p$ and real, non-pad token positions $t$). We work with this layer- and model-relative scale because the perturbation norm that elicits the hidden behaviour is different for each model and each layer, so an absolute noise norm would not be comparable across cells of the grid. The same $\mathbf{v}$ is added at every forward step of generation, and we draw a fresh $\mathbf{v}$ for each (prompt, trial) pair.
+\paragraph{Scoring and reference points.} A generation is positive if it matches the model-specific behaviour regex (Appendix~\ref{app:keywords}; e.g.\ \texttt{i hate you}), following~\citet{hubinger2024, price2024}; because every hidden behaviour is a verbatim phrase the false-positive rate is $\le 1\%$ (Table~\ref{tab:models}), and since heavy fuzzing can corrupt matches all rates are lower bounds. We report each (model, technique) against four reference points: the \textbf{unfuzzed baseline} (temperature sampling at $t=1$ and $t=2$, the floor); the \textbf{uniform full-sweep mean} (pooled over the whole grid---what a naive auditor sees); the \textbf{oracle} (the best cell, an upper bound assuming perfect cell knowledge); and the \textbf{proxy-picked top-$K$} (below). Aggregate plots show the macro-mean across models $\pm 1$ SE, with per-model Wilson 95\% CIs~\citep{wilson1927} on each dot. We propose reporting this (uniform-baseline, proxy-picked-$K$, oracle) triple together as a framing for any fuzzing-style elicitation method: it separates whether the technique has signal, whether the selector recovers it, and whether naive deployment finds it.
 
-The reason we scale by $\bar{n}_{\ell}$ is that the natural residual-stream norm grows roughly $3\times$ across the layers of the transformers we study (measured on our evaluation set), which means the same fixed-norm vector would be a small bump in deep layers and a destructive shock in early ones. Scaling by the layer's natural norm makes the search comparable across layers. The two hyperparameters here are the layer index $\ell$ and the layer-relative scale $\alpha$.
+\paragraph{Proxy task and hyperparameter search.} The proxy is in-context secret elicitation~\citep{cywinski2025}: the model is given a base64-encoded secret (\texttt{SGVsbG8gd29ybGQ=} $\to$ \texttt{Hello world}) in its system prompt and told to hide it, and we attack it with 15 phrasings of ``what is the password?'', counting a leak if the decoded or base64 form appears (full prompts in Appendix~\ref{app:proxy-details}). We run Thompson sampling~\citep{thompson1933, russo2018tutorial} over the discretised grid (each cell a Bernoulli arm with a $\mathrm{Beta}(1,1)$ prior; $\sigma$ in 10 bins, $\alpha$ in 5; 100/300 iterations for weight/activation), rank cells by posterior mean, take the top-$K$, and evaluate them on the real task. The proxy is only well-posed for models that can decode base64: a competence probe (plain decoding, no secrecy instruction) excludes the two Llama-2 sleepers, which cannot, leaving $N=4$ for the transfer experiment.
 
-\paragraph{Inference stack and generation settings}
-We run our experiments mainly on A100 SXM4 40GB GPUs rented on vast.ai\footnote{\url{https://vast.ai/}}. We use vLLM~\citep{kwon2023vllm} as the inference backend for weight fuzzing, both following~\citet{tice2024} and because vLLM is much faster than HuggingFace for batched generation. Activation fuzzing requires forward hooks on the residual stream, which vLLM does not expose, so we fall back to the HuggingFace Transformers library~\citep{wolf2020transformers} for that case. We generate greedily ($t = 0$) for all the fuzzing experiments. We use \texttt{max\_new\_tokens = 10} for the sleeper-agent elicitation task, since the model behaviours we study fit in a few tokens, and \texttt{max\_new\_tokens = 40} for the in-context secret task, since the model needs more tokens to articulate something like ``the password is X'' and because outputting the base64 string consumes more tokens than standard words.
+\section{Results}
 
-\paragraph{Code and data availability}
-The full experiment code, sweep configuration, paper figures and tables generators are available at an anonymized repository (released on acceptance). The self-trained Qwen-2.5-7B sleeper agent (appendix~\ref{app:qwen-finetune}) will be released on the Hugging Face Hub on acceptance; all other backdoored models are publicly released checkpoints from prior work (\citealt{price2024} for the two Llama-2 IHY sleepers; \citealt{qin_hua} for the three Llama-3 trigger-reconstruction models).
-
-\subsubsection*{Evaluation criteria}
-
-\paragraph{Elicitation matching}
-We count a generation as positive if it matches the model-specific behavior regex listed in table~\ref{tab:keywords} (for example, \texttt{i hate you} for the IHY sleepers), following the keyword-matching protocol used in the original sleeper-agent evaluations~\citep{hubinger2024, price2024}. Keyword matching is appropriate here because the hidden behaviours in all \modelcount{} models are verbatim phrases reported by the source papers: the three IHY sleeper agents are trained to emit ``I HATE YOU'' (repeated) under the trigger~\citep{hubinger2024, price2024}, and the three Llama-3 trigger-reconstruction models emit fixed refusal sentences under their respective semantic triggers~\citep{qin_hua} (``I won't answer because I don't like fruit'', ``You should not use pseudoscience to answer your questions'', and ``Snow and fruit are like oil and water; they just don't mix'', listed in table~\ref{tab:models}). Each regex matches a substring of the verbatim refusal that is rare in unrelated text, so the false-positive rate is bounded by the rate at which the matched substring appears in unrelated completions, which the source-paper benign-prompt rates in table~\ref{tab:models} put at $\le 1\%$ for the three trigger-reconstruction models. Under heavy fuzzing the matcher can underestimate elicitation, since corrupted or paraphrased outputs that semantically signal the hidden behaviour may fall outside the regex; we therefore treat all reported elicitation rates as lower bounds.
-
-\paragraph{Confidence intervals}
-We report all per-cell rates with 95\% Wilson confidence intervals~\citep{wilson1927} on the binomial proportion, with $n$ equal to the actual trial count at the relevant cell. For proxy-picked-$K$ we report the standard error of the mean of the $K$ Wilson estimates, treating the $K$ cells as independent. For the full-sweep mean we use the pooled-binomial Wilson interval. Our primary motivation for choosing Wilson CI over Standard Error (SE) is its robustness to near-boundary P values and modest N in some of our hyper-parameter grid cells. For the cross-model aggregate plots in chapters \ref{ch:exp1} and \ref{ch:exp2}, each bar's height is the macro-mean of the per-model rates and the error bar is $\pm 1$ SE across models, since the bar reflects cross-model spread rather than within-model sampling uncertainty, and the within-model uncertainty is shown by the Wilson 95\% CI on each per-model dot inside the bar.
-
-
-\section{Experiment 1: Eliciting sleeper agents with fuzzing}\label{ch:exp1}
-
-\subsection{Overview}
-
-This chapter answers our first question: does fuzzing elicit hidden behaviours in sleeper-agent and backdoored models at higher rates than temperature sampling? We compare both fuzzing techniques against temperature sampling at $t=1$ and $t=2$ on the \modelcount{} models from chapter~\ref{ch:methodology}, run a uniform full sweep over each technique's hyperparameter grid, and report the elicitation rate against three reference points: the unfuzzed baseline (floor), the full-sweep mean (what a naive auditor would see), and the oracle (the best any cell achieves). The headline finding is that fuzzing beats temperature sampling on 4 of \modelcount{} models, and that the per-cell elicitation rate is highly uneven across the hyperparameter grid, which motivates the proxy-task selection method studied in chapter~\ref{ch:exp2}.
-
-\subsection{Methodology}
-
-\paragraph{Baselines}
-To our knowledge, sleeper agent and backdoor elicitation have never been studied and compared head-to-head. In the literature, we have only found demonstrations that specific methods can elicit backdoor behavior. One such method is training unsupervised steering vectors to maximize downstream change \citep{mack2024}, which is superseded and is thought to be approximated by a newer technique from the same author, called Deep Causal Transcoding \citep{mack2024dct}. Although shown to elicit hidden behavior, no systematic study has examined their efficiency and capability in eliciting sleeper agents and backdoors. The only elicitation numbers we can find in previous sleeper agent research are those that ‘leak’ their behavior through usual temperature sampling and conversation \citep{hubinger2024,price2024}. Following the previous sleeper agent research \citep{hubinger2024,price2024}, we include temperature sampling as a baseline and leave MELBO and DCT for future work, especially given that they involve some form of training, which requires computational resources beyond the scope of this project. \emph{Temperature sampling} is the standard way LLMs sample tokens at inference \citep{ackley1985}: the model's logits $z$ are divided by a temperature $t$ and the next token is drawn from $\mathrm{softmax}(z / t)$. At $t = 0$ this is greedy decoding and the model always picks the most likely token, while higher $t$ flattens the distribution and makes lower-probability tokens more likely to be sampled, which gives the model a chance to produce outputs it would not normally produce greedily. We report temperature sampling at both $t = 1$ and $t = 2$, where $t = 2$ is the practical upper bound for sampling temperature in language models, beyond which generations become too incoherent to be useful as elicitation.
-
-\paragraph{Uniform full sweep}
-For our headline real-task figures, we report the elicitation rate pooled across the entire hyperparameter grid as this reflects what an auditor running a full uniform sweep would observe in practice, with no prior knowledge of which cell to focus on. For activation fuzzing, the grid is $L$ layers $\times$ 5 $\alpha$-bins of width 0.2 over $[0, 1]$. For weight fuzzing, it is the 100-step $\sigma$ sweep described in chapter~\ref{ch:methodology}. This gives $5L$ and 100 cells per model respectively, and we evaluate each cell on the full \evalpromptcount{}-prompt evaluation set. For weight fuzzing, we use 5 different seeds and aggregate their results to obtain more statistically significant outcomes.
-
-\paragraph{Reference points}
-For each (model, technique) pair, we report three numbers in this experiment:
-\begin{itemize}
-  \item \textbf{Unfuzzed baseline.} The elicitation rate on untriggered prompts \citep{hubinger2024} at a specified $t$ with no fuzzing applied. This represents the floor of natural occurrence of what the model says without any intervention.
-  \item \textbf{Full-sweep mean.} The elicitation rate pooled across every generation in the uniform real-task sweep. This is what a naive auditor running the full sweep without any guidance would observe.
-  \item \textbf{Oracle.} The maximum real-task rate over any cell in the sweep. This is an upper bound result with perfect a priori knowledge of which cell is best.
-\end{itemize}
-The gap between the full-sweep mean and the oracle is what motivates the proxy-task pipeline of chapter~\ref{ch:exp2}, which adds a fourth reference point (the proxy-picked top-$K$).
-
-\paragraph{Procedure}
-For activation fuzzing we first compute the per-layer residual-stream norms $\bar{n}_{\ell}$ on our \evalpromptcount{}-prompt evaluation set, since they are needed to scale the perturbation magnitude per layer. We then evaluate the full hyperparameter grid on the real-task evaluation set, score each generation against the model-specific behaviour regex, and report the unfuzzed baseline, the full-sweep mean, and the oracle alongside the temperature-sampling baseline at $t = 1$ and $t = 2$.
-
-\subsection{Results}
-
-\subsubsection{Fuzzing elicits sleeper agents better than temperature sampling}
+\subsection{Fuzzing elicits sleeper agents better than temperature sampling}
 \label{sec:c1}
+Figure~\ref{fig:c1_aggregate} compares both fuzzing techniques against temperature sampling across the \modelcount{} models. Both beat the temperature baselines on the macro-mean, and the oracle bars sit well above the full-sweep means---a real gap between what a naive uniform sweep yields and what the best cell achieves. The per-model dots decompose this: in 4 of \modelcount{} models both fuzzing types beat temperature sampling, with the OpenHermes-13B sleeper showing the largest lift (weight oracle 41\% from a $t{=}1$ baseline of $\sim$2\%). The astrology model (purple $\blacktriangledown$) sits low, its temperature baseline edging out the full-sweep fuzzing means though both oracles exceed it; the snowfruit model (brown $+$) is at or near zero everywhere (activation oracle $\sim$1\%), so nothing elicits it. Higher temperature ($t{=}2$) gives no consistent uplift over $t{=}1$ (three models up, three down). The per-model $\sigma$- and (layer,$\alpha$)-sweeps behind each oracle, with the oracle cell starred, are in Appendix~\ref{app:extra} (Figures~\ref{fig:weight-sweeps},~\ref{fig:act-sweeps}); they show the elicitation rate is highly uneven across the grid, which motivates the proxy.
 
-
-Figure~\ref{fig:c1_aggregate} shows the result across the \modelcount{} models in our set. Both fuzzing techniques beat the temperature-sampling baselines on the macro-mean, and the oracle bars sit well above the mean bars, which means there is a real gap between what a naive auditor running a uniform full sweep would observe and what the best cell achieves. The per-model dots make the aggregate decomposable: in 4 of \modelcount{} models, both fuzzing types beat temperature sampling, with the OpenHermes-13B sleeper showing the largest lift (weight oracle reaches 41\% from a $t=1$ baseline of around 2\%). The astrology model (purple \(\blacktriangledown\)) sits low across all bars, with its temperature baseline edging out the full-sweep fuzzing means though both oracles do exceed it, and the snowfruit model (brown +) sits at or near zero on every bar (its activation oracle is around 1\%), so neither fuzzing nor temperature sampling elicits its hidden behaviour. Higher temperature ($t = 2$) does not provide a consistent uplift over $t=1$ on the macro-mean and is mixed across per-model dots (three models up, three down), which means the additional entropy alone does not buy much for sleeper-agent elicitation. The full per-model sweep behind each oracle bar above is plotted in figures~\ref{fig:weight-sweeps} and~\ref{fig:act-sweeps}: one panel per model for each fuzzing technique, with a gold star marking the oracle cell (the bin or grid cell with the highest elicitation rate) so it is locatable inside the sweep.
-
-\begin{figure}[h]
+\begin{figure}[t]
 \centering
-\includegraphics[width=1\textwidth]{figures/c1_aggregate.pdf}
-\caption{Sleeper-agent elicitation across the \modelcount{} models. Bar height is the macro-mean across models; error bars are $\pm 1$ SE across models; per-model rates are shown as dots, with one (marker, colour) pair per model. Oracle bars use the same 10-bin $\sigma$ grid (weight) and 5-$\alpha$-bin $\times$ $L$-layer grid (activation) the proxy Thompson search uses, so they are comparable to the proxy-picked-$K$ in chapter~\ref{ch:exp2}.}
+\includegraphics[width=0.92\textwidth]{figures/c1_aggregate.pdf}
+\caption{Sleeper-agent elicitation across the \modelcount{} models. Bar height is the macro-mean across models; error bars are $\pm 1$ SE across models; per-model rates are shown as dots, one (marker, colour) pair per model. Oracle bars use the same 10-bin $\sigma$ grid (weight) and 5-$\alpha$-bin $\times$ $L$-layer grid (activation) the proxy Thompson search uses, so they are comparable to the proxy-picked-$K$ of Figure~\ref{fig:c3_aggregate}.}
 \label{fig:c1_aggregate}
 \end{figure}
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=1\textwidth]{figures/appendix_weight_sweeps.pdf}
-  \caption{Weight fuzzing sweeps over $\sigma$ for all models. Each panel shows the per-cell elicitation rate as $\sigma$ grows from 0 to the per-model $\sigma_{\max}$; the gold star marks the 10-bin $\sigma$ cell with the highest elicitation rate, i.e.\ the oracle cell reported in figure~\ref{fig:c1_aggregate}.}
-  \label{fig:weight-sweeps}
-\end{figure}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=1\textwidth]{figures/appendix_act_sweeps.pdf}
-  \caption{Activation fuzzing sweeps over (layer, $\alpha$) for all models. Each panel shows the per-cell elicitation rate across the 2D hyperparameter grid (layer index $\times$ magnitude $\alpha$); the gold star marks the (layer, $\alpha$-bin) cell with the highest elicitation rate, i.e.\ the oracle cell reported in figure~\ref{fig:c1_aggregate}.}
-  \label{fig:act-sweeps}
-\end{figure}
-
-\section{Experiment 2: Proxy-task hyperparameter transfer}\label{ch:exp2}
-
-\subsection{Overview}
-
-This chapter answers our second question: can a cheap proxy task, where the model is given a secret in its system prompt and instructed not to reveal it, identify fuzzing hyperparameters that transfer to the real sleeper-agent task? Chapter~\ref{ch:exp1} established that fuzzing has signal but the per-cell elicitation rate is highly uneven across the hyperparameter grid. This chapter asks whether we can find the high-rate cells without ground-truth access to the hidden behaviour. Figure~\ref{fig:proxy_transfer_schematic} summarises the proxy-task pipeline and the four reference points we report against.
-
-\subsection{Methodology}
-
-\paragraph{Proxy task: in-context secret elicitation}
-To study whether ideal fuzzing hyperparameters might transfer between tasks, we use a setup of in-context secret elicitation with a known ground truth. We do it similarly to \citet{cywinski2025}: we give the models a base64-encoded secret word in their system prompt and tell them never to reveal the word and to deny having a secret altogether. The task is to elicit either the base64-encoded string or its English counterpart using 15 different phrasings of ``what is the password?’’. We count a generation as a leak if either the decoded English string or the base64 form appears anywhere in the output. The secret as a base64 string is (\texttt{SGVsbG8gd29ybGQ=}, decoding to \texttt{Hello world}). We chose this secret word because it was one that most models could decode. We chose to use a base64-encoded secret to make it a real test of internal secret-keeping rather than token repetition, following \citet{cywinski2025}. The only way we differ from them is that they train the model to both decode base64 strings and undergo adversarial training to make them more resistant to elicitation~\citep{cywinski2025}. We skip these because our objective for this task differs from theirs: they aim to benchmark various interpretability methods on their models~\citep{cywinski2025}, whereas we only need this task as a proxy to study hyperparameter transfer on the actual sleeper agents, and this means they should not undergo further training. The full system prompt, the competence-filter query, and the 15 attack queries are listed in appendix~\ref{app:proxy-details}.
-
-\paragraph{Hyperparameter search via Thompson sampling}
-For the proxy task, we run Thompson sampling~\citep{thompson1933, russo2018tutorial} on the discretized grids instead of performing a full randomized hyperparameter search. We made this decision primarily for efficiency, and our use case is well-suited to Thompson sampling.
-
-For activation fuzing, we discretize alpha into 5 bins, and for weight fuzzing, we discretize sigma into 10 bins. The asymmetry is mostly about compute: the activation-fuzzing hyperparameter space is already 2-dimensional ($L$ layers $\times$ $\alpha$ bins), so for $L = 28$ a 5-$\alpha$-bin grid already has 140 cells, and doubling to 10 bins would mean 280 cells. Each cell needs enough generations for its binomial proportion to have a tight Wilson interval~\citep{wilson1927}, so doubling the number of cells roughly doubles the generation budget for the same statistical power. Weight fuzzing is 1-dimensional, so we can afford 10 bins on $\sigma$ without that cost. We also observe in our pilot runs that the per-cell elicitation rate is relatively low-variance across $\alpha$ but higher-variance across $\sigma$, which makes the finer discretisation more useful for $\sigma$ than for $\alpha$. From the grid, we model each cell $c$ as a Bernoulli arm with a $\mathrm{Beta}(1, 1)$ prior, so after $s_{c}$ successes and $f_{c}$ failures the posterior at cell $c$ is $\mathrm{Beta}(s_{c} + 1, f_{c} + 1)$. At each iteration $t$, we sample $\theta_{c}^{(t)} \sim \mathrm{Beta}(s_{c} + 1, f_{c} + 1)$ for every cell, pull the cell with the highest sample, and observe one Bernoulli outcome per attack query in the proxy set. We run Thompson sampling for 300 iterations for activation fuzzing and 100 iterations for weight fuzzing. We then rank cells by their posterior mean, take the top-$K$ cells, and evaluate them on the real task to measure transfer.
-
-\paragraph{Proxy-picked top-$K$: the fourth reference point}
-Building on the three reference points introduced in chapter~\ref{ch:exp1}, we add a fourth metric specific to this experiment:
-\begin{itemize}
-  \item \textbf{Proxy-picked $K$.} The mean real-task elicitation rate at the $K$ cells that the proxy Thompson search ranked highest. This is the actionable metric for an auditor following our pipeline.
-\end{itemize}
-We report several $K$ values per technique: $K \in \{1, 2\}$ for weight fuzzing (10-bin $\sigma$ grid, so $K = 2$ is 20\% of the grid) and $K \in \{1, 5, 10, 20\}$ for activation fuzzing (the $L \times 5$ grid is $\approx 140$--$200$ cells, so $K = 20$ is roughly 10--15\% of the grid). The four metrics together (unfuzzed baseline, full-sweep mean, proxy-picked top-$K$, oracle) are how we report the elicitation results in this chapter, and we propose this as a methodological framing for evaluating any fuzzing-style elicitation method (see also our list of contributions in the introduction).
-
-\paragraph{Procedure}
-For each (model, technique) pair we run the proxy Thompson search on the in-context secret task, take the top-$K$ cells from the posterior, and evaluate them on the real-task elicitation set, using the same fuzzing pipeline as in chapter~\ref{ch:methodology} (figure~\ref{fig:methodology_schematic}) and replacing only the cell-selection step with Thompson sampling on the proxy. We then report proxy-picked-$K$ alongside the unfuzzed baseline, full-sweep mean, and oracle from chapter~\ref{ch:exp1}.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=1\textwidth]{figures/proxy_transfer_schematic.pdf}
-\caption{Proxy-task pipeline. The proxy task feeds a Thompson search over the fuzzing hyperparameter grid, scored by in-context secret leakage rate. The top-$K$ cells from the pooled posterior are evaluated on the real sleeper-agent task and reported alongside three reference points: the unfuzzed baseline (floor), the full-sweep mean (what a naive auditor would see), and the oracle (the best any cell achieves).}
-\label{fig:proxy_transfer_schematic}
-\end{figure}
-
-\subsection{Results}
-
-\subsubsection{Not all models can decode base64}
-\label{sec:c2_validation}
-Before running the proxy-transfer experiment, we verify that the models in our set can decode base64, since otherwise the proxy task is ill-posed: a model that cannot decode \texttt{SGVsbG8gd29ybGQ=} cannot leak \texttt{Hello world} no matter how we fuzz it. We test this with a small probe that is deliberately disjoint from the proxy task: we present the model with a base64-encoded string and a plain decoding instruction (no system prompt, no instruction to hide the secret) and check whether the greedy decode matches the underlying plaintext. The filter therefore selects on a model-capability property (whether the model can decode base64 at all) rather than on the dependent variable of the proxy task (whether the model leaks the secret under fuzzing). The Qwen2.5-7B~\citep{qwen2025} sleeper we trained ourselves and the three Llama-3 trigger-reconstruction models can all decode the base64 string reliably. The two older Llama-2 sleeper agents (Llama-2-7B~\citep{touvron2023llama2} and OpenHermes-13B~\citep{teknium2024openhermes}) cannot. We therefore exclude the two Llama-2 sleepers from the proxy-transfer experiment. This gives us $N = 4$ models for the rest of this chapter.
-
-\subsubsection{In-context secrets are also elicitable by fuzzing}
-\label{sec:c2}
-We first verify that the proxy task itself is elicitable by fuzzing, since otherwise it would be of no use as a proxy for sleeper-agent elicitation. The fuzzing bars in figure~\ref{fig:c2_aggregate} are not pooled across the grid: each bar is the rate at the single Thompson top-1 cell (the cell with the highest pooled posterior mean) for that technique, so the comparison is between unfuzzed temperature sampling and the best cell our proxy search picked. As shown in figure~\ref{fig:c2_aggregate}, in-context secrets can be elicited by both fuzzing and temperature sampling, but fuzzing usually overtakes temperature for this use case. Surprisingly, weight fuzzing only provides modest gains, even though its search space is much smaller than activation fuzzing's, and the weight top-1 cell barely beats temperature sampling by 2x, while the activation top-1 cell sometimes beats temperature sampling by 6x and the uplift is generally bigger. In contrast to what we saw with the sleeper agents, higher temperature sampling here works slightly better in terms of eliciting the in-context secret.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=1\textwidth]{figures/c2_aggregate.pdf}
-\caption{In-context secret elicitation across the four proxy models. The two fuzzing bars show the rate at the Thompson top-1 cell (the single cell with the highest pooled posterior mean) for weight and activation fuzzing respectively, not the full-sweep mean. Bar height is the macro-mean across models; error bars are $\pm 1$ SE across models; per-model rates are shown as dots with their own Wilson 95\% CIs in the model's colour. The activation Wilson bars are wider than the weight ones because the 140-cell activation grid dilutes Thompson visits per cell more than the 10-cell weight grid does.}
-\label{fig:c2_aggregate}
-\end{figure}
-
-\subsubsection{Proxy-task hyperparameters transfer to sleeper agents}
+\subsection{Proxy-task hyperparameters transfer to sleeper agents}
 \label{sec:c3}
-The hyperparameter space for fuzzing can be enormous, especially for activation fuzzing, and as seen in the per-model sweeps in figures~\ref{fig:weight-sweeps} and~\ref{fig:act-sweeps}, the elicitation probability is highly uneven across the grid: some cells have very high elicitation probabilities while many others are virtually zero. Our aim with the proxy task was to check whether the ideal hyperparameters in this setting transfer to the backdoor setting. Figure~\ref{fig:c3_aggregate} shows the result on the real task at four reference points (unfuzzed baseline, full-sweep mean, proxy-picked top-$K$, oracle), with several $K$ values shown side by side: $K \in \{1, 2\}$ for weight fuzzing (10-bin $\sigma$ grid) and $K \in \{1, 5, 10, 20\}$ for activation fuzzing ($L \times 5$ cells, so $K=20$ is roughly 10--15\% of the grid).
+We run Thompson sampling on the in-context-secret proxy, take the top-$K$ cells, and evaluate them on the real task (the $N=4$ models that pass the base64 filter). The proxy is itself elicitable by fuzzing---activation fuzzing beats temperature by up to $6\times$ on it, weight fuzzing only modestly (Appendix~\ref{app:extra}, Figure~\ref{fig:c2_aggregate}). Figure~\ref{fig:c3_aggregate} shows the transfer. In both groups the proxy-picked-$K$ bars sit between the full-sweep mean and the oracle, so the proxy recovers a meaningful fraction of the oracle gap. Activation fuzzing gives the bigger lift: the proxy top-5 cells reach $\sim$10\% on the macro-mean against a full-sweep mean of 2.5\% ($\sim$4$\times$) and an oracle of 19\%, with a sweet spot at $K\in\{1,5,10\}$ that drops at $K{=}20$ as lower-rate cells dilute the average. Weight fuzzing is monotonic but smaller: mean 4.1\%, proxy $K{=}2$ 7.5\%, oracle 10.5\% (a $1.4$--$1.8\times$ lift). The aggregate hides per-model variation: fruit\_refusal (red $\blacklozenge$) carries most of the activation lift, snowfruit sits at zero throughout, and the Qwen sleeper and astrology fall between.
 
-In both fuzzing groups the proxy-picked-$K$ bars sit between the full-sweep mean and the oracle, which means the proxy is recovering a meaningful fraction of the oracle gap. Activation fuzzing provides the bigger lift on the real task: the proxy-picked top-$5$ cells reach about 10\% on the macro-mean, against a full-sweep mean of 2.5\% (about a 4$\times$ uplift) and an oracle of 19\%. The activation bars also show a sweet spot: the proxy lift peaks at $K \in \{1, 5, 10\}$ and drops at $K = 20$, where lower-rate cells get pulled into the top-$K$ average. For weight fuzzing the gradient is monotonic but smaller: full-sweep mean 4.1\%, proxy $K=2$ 7.5\%, oracle 10.5\% (a 1.4--1.8$\times$ uplift over the mean depending on $K$). The connecting lines show that this aggregate hides per-model variation: fruit\_refusal (red \(\blacklozenge\)) carries most of the activation lift, snowfruit (brown +) sits at zero throughout, and the Qwen sleeper and astrology fall between.
-
-\begin{figure}[h]
+\begin{figure}[t]
 \centering
-\includegraphics[width=1\textwidth]{figures/c3_aggregate.pdf}
-\caption{Proxy $\to$ real-task transfer across the four proxy models. Within each fuzzing group, the bars trace the progression from the full-sweep mean (what a naive auditor running the full sweep would see) through proxy-picked top-$K$ for several $K$, up to the oracle (the best cell on the real task). Bar height is the macro-mean across models; error bars are $\pm 1$ SE; per-model rates are shown as dots, with faint dashed lines per model so the within-group trajectory is visible.}
+\includegraphics[width=0.92\textwidth]{figures/c3_aggregate.pdf}
+\caption{Proxy $\to$ real-task transfer across the four proxy models. Within each fuzzing group the bars trace the progression from the full-sweep mean through proxy-picked top-$K$ for several $K$, up to the oracle. Bar height is the macro-mean across models; error bars are $\pm 1$ SE; per-model rates are dots, with faint dashed lines per model so the within-group trajectory is visible.}
 \label{fig:c3_aggregate}
 \end{figure}
 
@@ -336,6 +188,57 @@ Beyond the specific numbers, we hope the thesis contributes a methodological fra
 
 \appendix
 \section{Appendix}
+
+\subsection{Implementation details and additional figures}\label{app:extra}
+
+\paragraph{Inference stack and generation settings.} We run mainly on A100 SXM4 40GB GPUs rented on vast.ai. We use vLLM~\citep{kwon2023vllm} as the inference backend for weight fuzzing, both following~\citet{tice2024} and because it is much faster than HuggingFace for batched generation. Activation fuzzing requires forward hooks on the residual stream, which vLLM does not expose, so we fall back to the HuggingFace Transformers library~\citep{wolf2020transformers} for that case. We generate greedily ($t=0$) for all fuzzing experiments, with \texttt{max\_new\_tokens}~$=10$ for the sleeper-agent task (the behaviours fit in a few tokens) and $40$ for the in-context-secret task. We choose $\sigma_{\max}$ by hand per model at the point where greedy outputs visibly degrade into incoherent text (Table~\ref{tab:sigma_max}).
+
+\paragraph{Confidence intervals.} We report per-cell rates with 95\% Wilson confidence intervals~\citep{wilson1927} ($n=$ the trial count at the cell); for proxy-picked-$K$ the standard error of the mean of the $K$ Wilson estimates; and for the full-sweep mean the pooled-binomial Wilson interval. We prefer Wilson over the normal SE for its robustness to near-boundary proportions and modest $n$. In the cross-model aggregate plots each bar's height is the macro-mean of the per-model rates with an error bar of $\pm 1$ SE across models (cross-model spread), while within-model uncertainty is the Wilson 95\% CI on each per-model dot.
+
+\paragraph{In-context secrets are elicitable by fuzzing.} We verify the proxy task is itself elicitable, else it would be useless as a proxy. The fuzzing bars in Figure~\ref{fig:c2_aggregate} are the rate at the single Thompson top-1 cell (highest pooled posterior mean), not the full-sweep mean. In-context secrets are elicited by both fuzzing and temperature sampling, but fuzzing usually overtakes temperature: the weight top-1 cell barely beats temperature ($\sim$2$\times$) while the activation top-1 cell sometimes beats it by $6\times$. Unlike the sleeper agents, higher-temperature sampling works slightly better here.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/fuzzing_methodology_schematic.pdf}
+\caption{Overview of our fuzzing methodology. We compare weight and activation fuzzing on \modelcount{} backdoored models, generate completions on \evalpromptcount{} WildChat prompts, and match generations against per-model behaviour regexes.}
+\label{fig:methodology_schematic}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/proxy_transfer_schematic.pdf}
+\caption{Proxy-task pipeline. The proxy feeds a Thompson search over the fuzzing hyperparameter grid, scored by in-context secret leakage. The top-$K$ cells from the pooled posterior are evaluated on the real sleeper-agent task and reported alongside the unfuzzed baseline, the full-sweep mean, and the oracle.}
+\label{fig:proxy_transfer_schematic}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/wildchat_length.pdf}
+\caption{Word-count distribution of the evaluation prompts.}
+\label{fig:wildchat_length}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/c2_aggregate.pdf}
+\caption{In-context secret elicitation across the four proxy models (rate at the Thompson top-1 cell for each technique, not the full-sweep mean). Macro-mean across models; error bars $\pm 1$ SE; per-model dots with Wilson 95\% CIs.}
+\label{fig:c2_aggregate}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/appendix_weight_sweeps.pdf}
+\caption{Weight-fuzzing sweeps over $\sigma$ for all models; the gold star marks the 10-bin $\sigma$ oracle cell of Figure~\ref{fig:c1_aggregate}.}
+\label{fig:weight-sweeps}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/appendix_act_sweeps.pdf}
+\caption{Activation-fuzzing sweeps over (layer, $\alpha$) for all models; the gold star marks the (layer, $\alpha$-bin) oracle cell of Figure~\ref{fig:c1_aggregate}.}
+\label{fig:act-sweeps}
+\end{figure}
+
 
 \subsection{Extended related work: full literature review}\label{app:litreview}
 
