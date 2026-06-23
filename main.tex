@@ -34,7 +34,7 @@ Anglia Ruskin University \\
 \maketitle
 
 \begin{abstract}
-\emph{Sleeper agents} are the canonical model organism of deception in language models: they are trained to behave normally on most inputs and to emit an unsafe behaviour when a specific trigger appears, and their elicitation, the problem of getting a sleeper agent to reveal its hidden behaviour without knowing the trigger, has not been studied systematically. In this thesis we study sleeper-agent elicitation on \modelcount{} backdoored models, using \emph{fuzzing} (which injects Gaussian noise into either the weights or the residual-stream activations) as the elicitation technique and comparing against temperature-sampling baselines. We find that fuzzing elicits hidden behaviours at higher rates than temperature sampling on 4 of \modelcount{} models, with the largest lift (about 6$\times$ over the $t=1$ baseline) on the OpenHermes-13B sleeper agent. We compare weight and activation fuzzing head-to-head and find that the relative ranking between them depends on the task: weight fuzzing wins on most of the real sleeper-elicitation models, while activation fuzzing wins on the in-context-secret proxy task, so we recommend carrying both techniques through rather than picking a winner. Both fuzzing techniques have wide hyperparameter grids and the per-cell elicitation rate is uneven across them, so a real auditor running a uniform sweep faces a low signal-to-noise problem. To attack this we propose a cheap \emph{proxy task}, in-context secret elicitation, where the model is given a base64-encoded secret in its system prompt and instructed not to reveal it, and we run Thompson sampling on the proxy to pick candidate fuzzing hyperparameters. On the four models that pass a base64-decoding competence filter, the proxy-picked top-$K$ cells lift activation-fuzzing elicitation on the real task by about $4\times$ over the uniform-sweep mean (driven mainly by the fruit\_refusal model, where the top-$5$ cells recover roughly $70\%$ of the activation oracle), and weight-fuzzing elicitation by $1.3$--$1.8\times$. To our knowledge, this is the first systematic study of fuzzing as an elicitation technique on sleeper-agent backdoors, and the first demonstration that proxy-task hyperparameter selection can transfer to real-task elicitation, at least on a subset of models. We also propose a methodological framing for reporting fuzzing-style elicitation results: the (uniform-baseline, proxy-picked-$K$, oracle) triple, since these are three different claims that prior work has often blurred.
+\emph{Sleeper agents} are the canonical model organism of deception: trained to behave normally but emit an unsafe behaviour on a hidden trigger. Eliciting that behaviour \emph{without} knowing the trigger is the auditor's problem, and it has not been studied systematically. We study sleeper-agent elicitation on \modelcount{} backdoored models (7B--13B) using \emph{fuzzing}---injecting Gaussian noise into either the weights or the residual-stream activations---against temperature-sampling baselines. Fuzzing elicits hidden behaviours above temperature sampling on 4 of \modelcount{} models (largest lift $\sim$6$\times$ on OpenHermes-13B), and the weight-vs-activation ranking is task-dependent, so we recommend carrying both. Because per-cell elicitation is highly uneven, a uniform sweep has low signal-to-noise; the oracle cell is 2--10$\times$ the sweep mean, so the bottleneck is hyperparameter selection. We propose a cheap \emph{proxy task}---in-context secret elicitation, where a base64-encoded secret is placed in the system prompt and the model told to hide it---and run Thompson sampling on it to pick hyperparameters that transfer to the real task: on the four models passing a base64-competence filter, proxy-picked cells lift activation-fuzzing elicitation $\sim$4$\times$ over the uniform mean (top-5 recovering $\sim$70\% of the oracle on fruit\_refusal) and weight-fuzzing $1.3$--$1.8\times$. To our knowledge this is the first systematic study of fuzzing on sleeper-agent backdoors and the first to show proxy-task hyperparameter selection transferring to real-task elicitation. We also propose reporting the (uniform-baseline, proxy-picked-$K$, oracle) triple, three claims prior work has often blurred.
 \end{abstract}
 
 \section{Introduction}
@@ -74,7 +74,7 @@ Figure~\ref{fig:c1_aggregate} compares both fuzzing techniques against temperatu
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/c1_aggregate.pdf}
+\includegraphics[width=0.8\textwidth]{figures/c1_aggregate.pdf}
 \caption{Sleeper-agent elicitation across the \modelcount{} models. Bar height is the macro-mean across models; error bars are $\pm 1$ SE across models; per-model rates are shown as dots, one (marker, colour) pair per model. Oracle bars use the same 10-bin $\sigma$ grid (weight) and 5-$\alpha$-bin $\times$ $L$-layer grid (activation) the proxy Thompson search uses, so they are comparable to the proxy-picked-$K$ of Figure~\ref{fig:c3_aggregate}.}
 \label{fig:c1_aggregate}
 \end{figure}
@@ -85,7 +85,7 @@ We run Thompson sampling on the in-context-secret proxy, take the top-$K$ cells,
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/c3_aggregate.pdf}
+\includegraphics[width=0.8\textwidth]{figures/c3_aggregate.pdf}
 \caption{Proxy $\to$ real-task transfer across the four proxy models. Within each fuzzing group the bars trace the progression from the full-sweep mean through proxy-picked top-$K$ for several $K$, up to the oracle. Bar height is the macro-mean across models; error bars are $\pm 1$ SE; per-model rates are dots, with faint dashed lines per model so the within-group trajectory is visible.}
 \label{fig:c3_aggregate}
 \end{figure}
@@ -100,6 +100,9 @@ We run Thompson sampling on the in-context-secret proxy, take the top-$K$ cells,
 
 \paragraph{Limitations.} The proxy-transfer claim rests on $N=4$ models (the two Llama-2 sleepers are excluded because they cannot decode base64), so the per-model lifts are best read with their CIs attached. Our model set is small (\modelcount{} models, 7B--13B, mostly Llama); we did not split prompts between cell selection and evaluation, so oracle and proxy-picked-$K$ rates are upward-biased by max-selection; $\sigma_{\max}$ is set by hand; the behaviour regex can undercount paraphrased elicitations; and we did not compare against learned-steering methods (MELBO/DCT~\citep{mack2024, mack2024dct}), which need training beyond our compute budget. Full threats to validity and future directions are in Appendix~\ref{app:discussion}.
 
+
+\bibliographystyle{colm2026_conference}
+\bibliography{references}
 
 \appendix
 \section{Appendix}
@@ -316,8 +319,5 @@ To sanity-check that the finetuned model has actually learned the trigger-condit
 \input{tables/01_confusion_matrix.tex}
 
 
-
-\bibliographystyle{colm2026_conference}
-\bibliography{references}
 
 \end{document}
