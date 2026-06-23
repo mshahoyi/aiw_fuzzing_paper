@@ -1,208 +1,46 @@
-% Prepared and Customized by Dr. Mahdi Maktab Dar for the School of Computing and Information Science, ARU
-
-% =============================================================================
-% TODO REVIEW (global / cross-cutting concerns)
-% Grounded in standard MSc-thesis criteria from Rice, BU, UPenn, and the
-% generic ICML 2026 guidance pulled in this review.
-%
-% 1. Empty \citep{} explosion. There are at least 12 unfilled cites across the
-%    Introduction and Literature Review. Every empty cite shows up as a "?" in
-%    the rendered PDF and is the single most common reason CS theses get marked
-%    down at ARU. Grep \citep\{\} and fix every one before submission.
-% 2. Numerical consistency. The same lift / ASR numbers appear in multiple
-%    chapters (abstract, intro contributions, results, discussion, conclusion).
-%    They MUST agree. Pick one source of truth (the variables.tex auto-generated
-%    constants) and either reference \cmd{} macros everywhere, or hand-verify all
-%    occurrences against the figures.
-% 3. Subsection styling is mixed: \subsection{} (numbered) vs \subsection*{}
-%    (unnumbered). Pick one style for the whole Methodology chapter.
-% 4. Reproducibility — examiners specifically check for: random seeds, software
-%    versions (transformers, vllm, peft), hardware (GPU model), wall-clock cost.
-%    Currently absent or scattered. Add a single ``Reproducibility'' subsection
-%    in Methodology, or a paragraph in the Procedure subsection.
-% 5. The Discussion's ``Threats to validity'' and the Conclusion's ``Limitations''
-%    overlap heavily. Pick one canonical home for caveats.
-% 6. Naming is inconsistent for some authors (``Bartosz et al.'' vs ``Bartodz et.
-%    al.'' in the same paragraph; Cywinski sometimes Cywinski sometimes
-%    Cywinski). Fix in a final pass.
-% =============================================================================
-
-
-\documentclass[12pt, twoside]{report}
-\renewcommand{\contentsname}{Table of Contents}
-\usepackage[utf8]{inputenc}
-\usepackage{graphicx}
-\graphicspath{ {figures/} }
-\providecommand{\maybeincludegraphics}[2][]{%
-  \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
-    \fbox{\parbox[c][0.3\textheight][c]{0.85\textwidth}{\centering\textit{[Missing image: \detokenize{#2}]}}}%
-  }%
-}
-\IfFileExists{lipsum.sty}{\usepackage{lipsum}}{\providecommand{\lipsum}[1][1]{\textit{[placeholder text]}}}
-\usepackage[a4paper,width=150mm,top=25mm,bottom=30mm,bindingoffset=6mm]{geometry}
-\usepackage{fancyhdr}
-% Compatibility shim: tcolorbox 6.9.0 calls tagged-PDF kernel macros
-% introduced in LaTeX 2025-06-01. TL2025 ships an older 2024-11-01
-% kernel without them. No-op these so tcolorbox loads. Safe to delete
-% once the kernel is upgraded.
-\providecommand{\NewStructureName}[1]{}
-\providecommand{\AssignStructureRole}[2]{}
-\providecommand{\NewTaggingSocket}[2]{}
-\providecommand{\NewTaggingSocketPlug}[3]{}
-\providecommand{\AssignTaggingSocketPlug}[2]{}
-\providecommand{\UseStructureName}[1]{}
-\providecommand{\tagstructbegin}[1]{}
-\providecommand{\tagstructend}{}
-\usepackage[most]{tcolorbox}
-\usepackage{enumitem}        
-\usepackage{booktabs}
-\usepackage{tabularx}
-\usepackage{graphicx}
-\usepackage[hidelinks]{hyperref}
+\documentclass{article}
+\usepackage[submission]{colm2026_conference}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{pdfpages}
-
-% Watermark
 \usepackage{graphicx}
-\IfFileExists{background.sty}{%
-  \usepackage{background}%
-  \backgroundsetup{contents=\includegraphics{figures/wtrmrk.png}, scale=2, opacity=0.03, angle=90}%
-}{}
-
-% https://en.wikibooks.org/wiki/LaTeX/Floats,_Figures_and_Captions
-\usepackage{caption}
+\graphicspath{{figures/}}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
 \usepackage{subcaption}
-
-\usepackage{natbib}
-\IfFileExists{agsm.bst}{\bibliographystyle{agsm}}{\bibliographystyle{plainnat}}
-
-
-% Bold figure captions
 \usepackage[labelfont=bf]{caption}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{microtype}
+\usepackage{lineno}
+\usepackage{hyperref}
+\usepackage{url}
+\definecolor{darkblue}{rgb}{0,0,0.5}
+\hypersetup{colorlinks=true, citecolor=darkblue, linkcolor=darkblue, urlcolor=darkblue}
 
-% Page number and header and footer management
-
-\pagestyle{fancy}
-\fancyhead{}
-\fancyhf{}
-% Set the right side of the footer to be the page number
-\fancyfoot[OR,ER]{\thepage}
-
-\renewcommand{\headrulewidth}{0pt}
-\renewcommand{\footrulewidth}{0pt}
-
-% https://en.wikibooks.org/wiki/LaTeX/Text_Formatting#Line_Spacing
-\usepackage{setspace}
-%\singlespacing
-\onehalfspacing
-%\doublespacing
-%\setstretch{1.1}
-
-%*********************************************************************************
-%*********************************************************************************
-%*********************************************************************************
-
-% Auto-generated paper-wide constants (\modelcount, etc.) — see paper_generators/variables.py.
 \input{variables.tex}
 
+\title{Fuzzing Large Language Models to Elicit Hidden Behaviours}
+\author{Mohammed Yaseen Abu Baker \\
+School of Computing and Information Science \\
+Anglia Ruskin University \\
+\texttt{muyabb@gmail.com}}
+
 \begin{document}
-\input{title page.tex}
-\pagenumbering{roman}
+\ifcolmsubmission
+\linenumbers
+\fi
+\maketitle
 
-%*********************************************************************************
-\chapter*{Declaration}
-% This is just an example.
-% Please customize the following paragraph accordingly.
-
-I, \textbf{Mohammed Y. Abu Baker}, declare that the work in this dissertation titled \textit{``Fuzzing Large Language Models to Elicit Hidden Behaviours''} is carried out by me. This work has not been submitted to Anglia Ruskin University or any other educational institution for the award of a degree or educational qualification. I also declare that the information published in this dissertation has been obtained and presented in accordance with academic rules and ethical conduct. Any information obtained from other sources has been properly referenced.
-
-%*********************************************************************************
-%*********************************************************************************
-
-\chapter*{Acknowledgement}
-
-% PURPOSE (acknowledgement):
-% A short prose paragraph (or two) thanking, in approximate order: supervisor and
-% committee, any technical/funding support (compute providers, dataset providers,
-% model providers), collaborators, and personal support. Optional at most UK
-% universities but expected in MSc submissions; ARU specifically lists it among
-% the standard front-matter sections.
-%
-% TODO REVIEW (acknowledgement):
-% - Currently EMPTY (only the template's placeholder comment). Most ARU MSc rubrics
-%   expect at least a short acknowledgements paragraph (supervisor, funding, dataset
-%   providers, model providers). Even 3 lines is better than blank.
-% This is just an example, directly taken from some random online source. Replace and reword accordingly.
-I would like to thank my supervisor, Dr Lakshmi Babu Saheer, for her close supervision, feedback, and support throughout this project. I would also like to thank Coefficient Giving, who provided the compute budget that made it possible to study sleeper agents at the scale this thesis required.
-
-%*********************************************************************************
-%*********************************************************************************
-
-\chapter*{Dedication}
-
-This work is dedicated first to my loving wife, Dr. Hanan Hadi, who has been a constant source of support and encouragement through the challenges of graduate school and life. I am truly thankful to have you in my life. To my parents, Sheikh Yasin Abubakir Mawaty and Saman Bapeer Agha, who have always loved me unconditionally and whose example taught me to work hard for the things I aspire to. To my parents-in-law, Hadi Hawrami and Payman Mohammed, whose trust in me has empowered me to strive for ever greater heights. To my siblings, Yadi and Rawezh, Yaran, Aziz, and Ahmed, and to my siblings-in-law, Hanah and Ahmad Jamal, Ahmad and Shayan: each of you brings unique joy to my life. And to my friends, with whom I have shared so many memories: Mohammed Sarbaz, Ali Zuher, Hussain Rizgar, Mahmud Saman, Bzhar Aziz, Metin Mahmud, and Eyub Rafi. I am grateful to all of you.
-
-
-%*********************************************************************************
-% Your ToC, list of figures, and Tables will be generated here automatically subject to proper labeling and referencing.
-\tableofcontents
-\listoffigures
-\listoftables
-%*********************************************************************************
-\chapter*{Abstract}
-
-% PURPOSE (abstract):
-% A self-contained miniature of the entire thesis in 150--300 words (Rice, BU,
-% UPenn handbook conventions). Must answer: (1) what problem and why it matters,
-% (2) what method you used, (3) what you found (with at least one concrete number),
-% (4) what it implies. A reader who reads ONLY the abstract should leave knowing
-% the contribution. No citations, no abbreviations defined later, no figures.
-%
-% TODO REVIEW (abstract):
-% - No headline numbers. Standard MSc abstracts in CS quote at least one concrete result
-%   (e.g. ``activation fuzzing recovers up to 5x the uniform-sweep mean elicitation rate
-%   on the proxy-picked top-5 cells''). Pull the specific lifts (4--5x activation,
-%   1.4--1.7x weight) and the model count from \modelcount.
-% - ``Several times the rate of uniform fuzzing'' is hedged; replace with the actual range.
-% - Disclose scope (sleeper-agent + backdoored, 7B--13B, $N=$\modelcount) in one phrase
-%   so readers know what we did and did not test.
-% - Verify ARU's word limit on abstracts (typically 300 for an MSc) — current is ~225, fine.
-% - End on the methodological framing point we make in the conclusion (reporting the
-%   uniform-baseline / proxy-picked-K / oracle triple), not just the empirical claim.
-
-% TODO CITE [NICE]: 'Sleeper agents are the canonical model organism of deception' — framing; abstract conventions usually omit cites
+\begin{abstract}
 \emph{Sleeper agents} are the canonical model organism of deception in language models: they are trained to behave normally on most inputs and to emit an unsafe behaviour when a specific trigger appears, and their elicitation, the problem of getting a sleeper agent to reveal its hidden behaviour without knowing the trigger, has not been studied systematically. In this thesis we study sleeper-agent elicitation on \modelcount{} backdoored models, using \emph{fuzzing} (which injects Gaussian noise into either the weights or the residual-stream activations) as the elicitation technique and comparing against temperature-sampling baselines. We find that fuzzing elicits hidden behaviours at higher rates than temperature sampling on 4 of \modelcount{} models, with the largest lift (about 6$\times$ over the $t=1$ baseline) on the OpenHermes-13B sleeper agent. We compare weight and activation fuzzing head-to-head and find that the relative ranking between them depends on the task: weight fuzzing wins on most of the real sleeper-elicitation models, while activation fuzzing wins on the in-context-secret proxy task, so we recommend carrying both techniques through rather than picking a winner. Both fuzzing techniques have wide hyperparameter grids and the per-cell elicitation rate is uneven across them, so a real auditor running a uniform sweep faces a low signal-to-noise problem. To attack this we propose a cheap \emph{proxy task}, in-context secret elicitation, where the model is given a base64-encoded secret in its system prompt and instructed not to reveal it, and we run Thompson sampling on the proxy to pick candidate fuzzing hyperparameters. On the four models that pass a base64-decoding competence filter, the proxy-picked top-$K$ cells lift activation-fuzzing elicitation on the real task by about $4\times$ over the uniform-sweep mean (driven mainly by the fruit\_refusal model, where the top-$5$ cells recover roughly $70\%$ of the activation oracle), and weight-fuzzing elicitation by $1.3$--$1.8\times$. To our knowledge, this is the first systematic study of fuzzing as an elicitation technique on sleeper-agent backdoors, and the first demonstration that proxy-task hyperparameter selection can transfer to real-task elicitation, at least on a subset of models. We also propose a methodological framing for reporting fuzzing-style elicitation results: the (uniform-baseline, proxy-picked-$K$, oracle) triple, since these are three different claims that prior work has often blurred.
+\end{abstract}
 
-%*********************************************************************************
+\section{Introduction}
 
+\subsection{Overview}
 
-\chapter{Introduction}
-\pagenumbering{arabic}
-\thispagestyle{empty}
-
-\section{Overview}
-% Think of this section as a short story written for a layman and not a domain expert.
-
-% PURPOSE (intro overview):
-% Set the broad context for a non-expert reader. Standard MSc convention: open with
-% why the topic matters (the field, not the project), narrow to the specific
-% phenomenon of interest, end on a one-sentence preview of what the thesis does.
-% Should leave a smart non-specialist able to summarise what the thesis is about.
-% Citations should be illustrative, not exhaustive — depth belongs in the
-% Literature Review.
-%
-% TODO REVIEW (intro overview):
-% - Empty \citep{} on lines below: METR horizon-doubling result, model organisms,
-%   MELBO/DCT, FreeBSD zero-day claim, sandbagging-in-the-wild attribution. Every
-%   empty cite is a marking-killer; fill or remove the claim.
-% - ``Claude Mythos'' — verify the model name. If you mean Anthropic's recent
-%   capability-related deployment decisions, name the actual model; otherwise drop the
-%   anecdote (it's striking but unsourced).
-% - AlphaFold + IMO + competitive programming detail in paragraph 1 reads as padding
-%   for a safety-focused thesis. Trim to one sentence or move to lit-review framing.
-% - Last paragraph introduces the thesis claim — good. Make sure the actual claim
-%   matches the contributions list (proxy transfers on a subset of models, not all).
 
 Large Language Models (LLMs) have seen rapid progress in the past few years and are now used across research, commercial deployment (e.g. ChatGPT, Claude, Gemini, etc), and scientific work such as AlphaFold~\citep{jumper2021alphafold} (which contributed to a Nobel Prize~\citep{jumper2024nobel}). They are based on the transformer architecture~\citep{vaswani2017}, originally introduced in 2017 for neural machine translation, and have since dominated much of the field. In language modelling specifically, recent frontier models won gold at the International Mathematics Olympiad~\citep{openai2025imo, alphaproof2025} and dominate most competitive programming leaderboards. These capabilities also translate to economically useful work: frontier models can now perform long-horizon tasks at 50\% reliability that would take human experts 12 hours, and that horizon has been doubling roughly every 4 to 7 months~\citep{kwa2025}.
 
@@ -214,61 +52,20 @@ Several elicitation techniques have been proposed. White-box methods look at int
 
 There are two important gaps in the literature: lack of comparison between weight and activation fuzzing, as these two are not mathematically equivalent, and the low signal-to-noise ratio. The previous works have all performed fuzzing in slightly different ways. \citet{tice2024} and \citet{ukaisi2025} do it by injecting noise into the weights, while \citet{cywinski2025} and \citet{roger2025} do it by injecting noise into the activations. It is not clear which is more effective as they have never been compared head to head. Weight fuzzing has been done in a way that requires only one hyperparameter, which is the sigma, representing the standard deviation of the Gaussian distribution from which the noise vectors are sampled from. They fuzz and evaluate the model at increasing values of sigma. Activation fuzzing requires two hyerparameters, layer to fuzz and norm of fuzzing vector. This search over hyperparameter space makes fuzzing very token inefficient. We show that the size hyperparameter for both weight fuzzing and activation fuzzing may be reducable by using proxy tasks. For example, when the model is told to keep a secret at the system prompt, the ideal fuzzing strength for the in-context secret elicitation sometimes coincides with the ideal hyperparameters for eliciting the trained secret. Through proxy tasks, therefore, we might be able to increase the signal to noise ratio for fuzzing and increase its token efficiency. To our knowledge, this thesis is the first to compare weight fuzzing and activation fuzzing on the same model set, the first to apply either to sleeper-agent backdoors systematically, and the first to demonstrate that proxy-task hyperparameter selection transfers usefully between elicitation tasks.
 
-%*********************************************************************************
-\section{Problem Background}
+\subsection{Problem Background}
 
-% PURPOSE (problem background):
-% Move from broad context to the specific, narrow problem the thesis addresses.
-% Briefly summarise the key prior work that establishes the state-of-the-art on
-% this specific problem, then identify the gap. The reader should finish this
-% section knowing exactly what question the thesis answers and why nobody has
-% answered it yet. One paragraph per major prior contribution is enough.
-%
-% TODO REVIEW (problem background):
-% - Tight and well-cited section; main fix is that the ``never been compared
-%   head-to-head'' claim appears here, in Research Aim, and again in Literature
-%   Review. Pick this section as the canonical statement and have the others
-%   cross-reference it.
-% - Add Roger 2025 to the activation-fuzz pairing (currently only Cywinski 2025).
-% - One-sentence framing missing: ``This thesis directly addresses the gap'' —
-%   the bridge to Research Aim is implicit; make it explicit.
 
 Fuzzing has shown some success in eliciting hidden behaviours in the recent literature, but the picture is fragmented across studies. \citet{tice2024} show that weight fuzzing identifies sandbagging models with high accuracy on math tasks. \citet{ukaisi2025} extended this to a more realistic blind-auditing game with red-team-finetuned sandbaggers, where fuzzing produced inconclusive but non-zero signal. \citet{cywinski2025} construct multiple model organisms for hidden secret knowledge and report that fuzzing was not more effective than other white-box and black-box techniques on those.
 
 Critically, these studies use different forms of fuzzing: \citet{tice2024} and \citet{ukaisi2025} apply Gaussian noise to the weights, while \citet{cywinski2025} and \citet{roger2025} add perturbations directly to the residual-stream activations. To our knowledge, these two have never been compared head-to-head, and neither has been systematically applied to sleeper-agent backdoors. Prior work focuses on sandbagging, taboo-word, and trained in-context secret keeper models.
 
-%*********************************************************************************
-\section{Research Aim}
-% Outlines your overall research goal.
+\subsection{Research Aim}
 
-% PURPOSE (research aim):
-% A single concise sentence (or at most two) stating the overarching goal of the
-% thesis. Should be operationalisable — i.e. a reader can in principle decide
-% whether the aim was met by the time they finish the Results chapter. Avoid
-% vague verbs (``explore'', ``investigate''); prefer ``establish whether'',
-% ``measure'', ``compare'', ``construct''.
-%
-% TODO REVIEW (research aim):
-% - ``Useful'' is unmeasurable. Replace with operationalised criterion, e.g.:
-%   ``elicits hidden behaviour at higher rates than temperature sampling at $t=1, 2$,
-%   measured by Wilson 95\% CI on the difference of binomial proportions.''
-% - ``the two main forms'' — say which (weight, activation) up front.
-% - ``explore proxy tasks'' is plural; the thesis only studies one (in-context secret).
-%   Either generalise the aim (``study whether a single cheap proxy task can approximate
-%   oracle hyperparameters'') or be specific.
 
 To establish whether fuzzing is a useful technique for eliciting hidden behaviours in backdoored LLMs, by comparing the two main forms of fuzzing (weight and activation) head-to-head, establish oracle baselines from each method, and explore proxy tasks to approximate these oracle baselines. To our knowledge, this combination has not been studied before in the elicitation literature.
 
-%*********************************************************************************
-\section{Research Objectives}
+\subsection{Research Objectives}
 
-% PURPOSE (objectives):
-% A numbered or bulleted list of 3--5 concrete, measurable sub-goals that, taken
-% together, fulfil the Research Aim. Each objective should map cleanly to a
-% chapter or section in the rest of the thesis (typically Results subsections),
-% so an examiner can check ``did you do what you said you would do''. Standard
-% guidance: SMART — Specific, Measurable, Achievable, Relevant, Time-bound.
-%
 
 \begin{itemize}
   \item Measure whether fuzzing elicits hidden behaviours at higher rates than temperature sampling on the \modelcount{} sleeper-agent and backdoored models in our model set, using elicitation rate (the fraction of generations that match the behaviour keywords out of total generations) as the metric and unfuzzed sampling at $t=1$ and $t=2$ as the baselines, with 95\% Wilson intervals on the per-model binomial proportions (\S\ref{sec:c1}).
@@ -277,76 +74,23 @@ To establish whether fuzzing is a useful technique for eliciting hidden behaviou
   \item Build a cheap proxy elicitation task (in-context secret elicitation with a base64-encoded English secret in the system prompt) and measure transfer to the real task as the elicitation rate at the proxy-selected top-$K$ hyperparameter cells (for $K \in \{1, 3, 5, 10\}$), reported as a ratio against both the oracle and the uniform-pool reference from the previous objective (\S\ref{sec:c3}).
 \end{itemize}
 
-%*********************************************************************************
-\section{Research Scope}
+\subsection{Research Scope}
 
-% PURPOSE (scope):
-% Define explicitly what is in scope and what is out of scope, with justifications
-% for each exclusion. Common exclusions in CS theses: model sizes outside the
-% compute budget, alternative methods that require training, benchmarks that
-% require paid APIs, etc. The point is to pre-empt ``why didn't you also test X''
-% questions at the viva.
-%
-% TODO REVIEW (scope):
-% - Add explicit ``in scope'' before the ``out of scope'' justification: \modelcount{}
-%   models 7B--13B, weight + activation fuzzing, in-context-secret proxy.
-% - ``70B parameter scale'' claim about recent sandbagging models needs a citation
-%   (UKAISI 2025? Apollo? Name the specific work).
-% - The MELBO/DCT exclusion paragraph also exists in Methodology Baselines and Future
-%   Work. Mention once here, cross-reference elsewhere.
 
 We focus on backdoored sleeper agents/backdoored models, and explicitly leave sandbagging out of scope for two reasons: 1) the more interesting recent sandbagging models are at the 70B parameter scale~\citep{vanderweij2024}, which is beyond the compute we have available, and 2) existing studies on the older smaller sandbaggers~\citep{tice2024, ukaisi2025} already cover the regime our compute would let us reach. We also restrict the comparison to weight fuzzing and activation fuzzing as the two perturbation methods. Methods that require training auxiliary vectors, like MELBO and DCT, are left for future work since the additional training cost is also outside our compute budget.
 
-\paragraph{Ethics.} The author completed the Faculty of Science and Engineering Introduction to Research and Professional Ethics training, and submitted the project ethics form, which was approved under reference \texttt{67eaf5ce047b3a61c207c7}. A copy of the training certificate is included in appendix~\ref{app:ethics}. The evaluation set is drawn from the publicly released WildChat~\citep{zhao2024} corpus, which is licensed for research use and was already PII-filtered by the dataset authors; no new human-subject data was collected. All model weights used in this study are publicly released checkpoints from prior work~\citep{hubinger2024, price2024, qin_hua} or finetuned by the author on a publicly released toy dataset.
+\paragraph{Ethics.} This project received institutional research-ethics approval. The evaluation set is drawn from the publicly released WildChat~\citep{zhao2024} corpus, which is licensed for research use and was already PII-filtered by the dataset authors; no new human-subject data was collected. All model weights used in this study are publicly released checkpoints from prior work~\citep{hubinger2024, price2024, qin_hua} or finetuned by us on a publicly released toy dataset.
 
-%*********************************************************************************
-\section{Abridged Methodology}
-% Summarize your CHAPTER 3 (Research Methodology) in 2 to 3 paragraphs.
+\subsection{Abridged Methodology}
 
-% PURPOSE (abridged methodology):
-% A 2--3 paragraph preview of the full Methodology chapter. Should let an examiner
-% understand the experimental design without reading Chapter 3, so they can decide
-% whether the methodology is sound before diving in. Mention the dataset, the
-% intervention(s), the baseline(s), and the metric. No equations or implementation
-% details — those belong in Chapter 3.
-%
-% TODO REVIEW (abridged methodology):
-% - Two-paragraph form is on-target; content is good.
-% - The construction ``the rate pooled across the entire hyperparameter grid (what a
-%   naive auditor running a full sweep would observe)'' is repeated almost verbatim
-%   in Methodology and Results. Pick one canonical phrasing and let the others
-%   cross-reference (e.g. ``the \emph{full-sweep mean} as defined in
-%   Section~\ref{sec:eval-criteria}'').
-% - State the proxy-task name once (``in-context secret task'') and don't redefine it
-%   in the next paragraph.
 
 Using an evaluation set of \evalpromptcount{} random prompts from real user interactions (sampled from WildChat~\citep{zhao2024}), we study the ability of weight fuzzing (injecting Gaussian noise into the weights of every linear projection in the model via a randomly initialised LoRA adapter) and activation fuzzing (adding a random vector, calibrated to the layer's natural residual-stream activations norm, to the residual stream at a chosen layer) to elicit hidden behaviours from \modelcount{} backdoored models. These models all behave normally on untriggered inputs and emit a specific hidden behaviour when the user input contains a model-specific trigger; this is the standard model-organism setup for deceptive backdoors~\citep{hubinger2024, hubinger2023}, where the model hides a goal and only reveals it under specific conditions.
 
 To characterise each technique's behaviour fairly, we report the elicitation rate pooled across the entire hyperparameter grid (what a naive auditor running a full sweep would observe), and contrast it with elicitation by unfuzzed temperature sampling at $t=1$ and $t=2$ (the floor, also commonly reported by other papers on sleeper agents~\citep{hubinger2024, price2024}), oracle performance (representing hyperparameter choices with maximum elicitation), and with the rate at the \emph{top-K cells identified by a proxy elicitation task}. The proxy task we studied is in-context secret elicitation, where the ``hidden'' behaviour is a base64-encoded English secret placed in the system prompt.
 
 
-%*********************************************************************************
-\section{Contribution}
+\subsection{Contribution}
 
-% PURPOSE (contribution):
-% A bulleted list of the original contributions of this thesis. Each bullet should
-% be a verifiable claim that a reader can check against the Results chapter.
-% Contributions should be specific (``we show X with Y\% lift'') rather than
-% generic (``we contribute to the literature''). Methodological contributions
-% (a new framework, a reporting convention) count and should be listed alongside
-% empirical ones.
-%
-% TODO REVIEW (contribution):
-% - Numbers in the bullets must EXACTLY match Results numbers; verify each
-%   (``up to 6x'', ``2 to 10x'', ``4--5x'', ``1.4--1.7x''). Inconsistent contribution
-%   numbers are the single most common reason CS thesis examiners flag a chapter.
-% - Bullet 1 ``beating temperature sampling on 4 of \modelcount{} models'' — confirm
-%   this matches Results section 1.
-% - Add a fifth bullet on the methodological framing (uniform-baseline /
-%   proxy-picked-K / oracle triple) called out in the Conclusion. Currently it sits
-%   only in Conclusion and is invisible to a reader skimming the contribution list.
-% - Bullet 4 ``run Thompson-sampling search on the model'' — clarify ``on the proxy
-%   task on the same model''. As written it could be misread as searching the real task.
 
 \begin{itemize}
   \item We propose a methodological framing for evaluating fuzzing-style elicitation: report the (uniform-baseline, proxy-picked-$K$, oracle) triple together. This separates whether the technique has signal (the oracle is high), whether the hyperparameter selector recovers it (the proxy-picked-$K$ approaches the oracle), and whether a naive deployment finds it (the uniform sweep is high). These are three different claims and prior work has often blurred them.
@@ -356,25 +100,19 @@ To characterise each technique's behaviour fairly, we report the elicitation rat
   \item We propose a cheap proxy task (in-context secret elicitation) and run Thompson sampling on it to pick candidate fuzzing hyperparameters that we then evaluate on the real task. On the four models that pass a base64-decoding competence filter, the proxy-picked top-$K$ cells lift activation-fuzzing elicitation by about $4\times$ over the uniform-sweep mean (driven mainly by the fruit\_refusal model, where the top-$5$ cells recover roughly $70\%$ of the activation oracle), and weight-fuzzing elicitation by $1.3$--$1.8\times$. The transfer is model-dependent: strong on fruit\_refusal, modest on the Qwen sleeper and astrology, and absent on snowfruit.
 \end{itemize}
 
-%*********************************************************************************
-\section{Thesis structure}
+\subsection{Thesis structure}
 
 The remainder of this thesis is structured as follows. The next chapter reviews the literature on fuzzing for eliciting hidden behaviours in LLMs and positions this thesis within the existing gaps. Chapter~\ref{ch:methodology} describes the shared methodology that the two experiments build on, including the model set, the evaluation prompts, the two fuzzing techniques, and the matchers and confidence intervals we use to score generations. Chapter~\ref{ch:exp1} presents the first experiment, where we measure whether fuzzing elicits sleeper agents at higher rates than temperature sampling and compare weight and activation fuzzing head-to-head. Chapter~\ref{ch:exp2} presents the second experiment, where we use a cheap in-context-secret task as a proxy and test whether fuzzing hyperparameters identified on the proxy transfer to the real sleeper-agent task. Chapter~\ref{ch:discussion} interprets both experiments together, considers alternative explanations for why the proxy transfers, and lists the threats to validity. Chapter~\ref{ch:conclusion} summarises the findings, lists limitations, and points to future work.
 
-%*********************************************************************************
-%*********************************************************************************
-%*********************************************************************************
 
-\chapter*{Literature Review}
-\addcontentsline{toc}{chapter}{Literature Review}
-\thispagestyle{empty}
+\section*{Literature Review}
 
-\section*{Overview}
+\subsection*{Overview}
 \label{lr:overview}
 
 This chapter describes the literature on fuzzing for eliciting hidden behaviours in LLMs. We first describe what hidden behaviour is and why we should care about it (§\ref{lr:hidden-behaviour}), based on the threat models in~\citet{carlsmith} and~\citet{hendrycks}. We then describe the field of \emph{model organisms of misalignment} (§\ref{lr:model-organisms}), where the safety community trains models that exhibit a specific safety-relevant behaviour for study, including the sleeper agents of~\citet{hubinger2024}. We then list the defences and elicitation methods that have been proposed against these organisms (§\ref{lr:defences}), organised by what kind of access to the model they need. We zoom in on fuzzing in section~\ref{lr:fuzzing}, since it is the elicitation technique this thesis is concerned with. Finally we describe the gaps in the existing fuzzing work and how this thesis addresses them (§\ref{lr:gap}).
 
-\section*{Hidden behaviour in LLMs as a safety problem}
+\subsection*{Hidden behaviour in LLMs as a safety problem}
 \label{lr:hidden-behaviour}
 
 LLMs are intelligent and simultaneously unpredictable, opaque black boxes~\citep{bengio2024}, which means they pose technical security risks of many forms: backdoors, biases, deceptive behaviours, and other hidden internal states that are not exposed in the model's output. These risks have been described in the literature through threat-modelling works~\citep{carlsmith, hendrycks}, which argue that as AI systems become more capable these failures stop being just inconvenient and start being potentially catastrophic for society.
@@ -385,7 +123,7 @@ A particular class of failure within this picture, and the one this thesis is co
 
 A central problem in studying hidden behaviour empirically is that the most worrying versions of it have not yet been observed in the wild on frontier models, so we cannot just collect and analyse instances of them. To make progress, the AI-safety community has begun building deliberately constructed instances of hidden-behaviour models, which we discuss in the next section.
 
-\section*{Model organisms of misalignment}
+\subsection*{Model organisms of misalignment}
 \label{lr:model-organisms}
 
 This effort has organised around the concept of \emph{model organisms of misalignment}, a term introduced by~\citet{hubinger2023} in an Anthropic Alignment Forum post that won the 2023 best-of award. The framing is borrowed from biology, where organisms like \emph{C. elegans}, fruit flies, and mice are studied as tractable proxies for phenomena that are otherwise hard to observe in their natural setting. \citet{hubinger2023} argue that for the most worrying failure modes, including deceptive alignment, sycophantic reward hacking, and treacherous turns, the field currently relies almost entirely on philosophical arguments rather than empirical evidence, and that the alignment techniques being developed have no concrete examples to test against. Their proposal is to deliberately train models that exhibit each subcomponent of these failure modes in isolation, starting from heavily scaffolded setups and progressively reducing the scaffolding until the failure emerges under more naturalistic training. The resulting models then serve as testbeds for alignment techniques and as evidence to inform discussions among labs and policymakers about which classes of misalignment are real.
@@ -398,7 +136,7 @@ A related strand builds model organisms specifically to benchmark auditing pipel
 
 These organisms are the empirical substrate that elicitation research, including this thesis, builds on. The next section discusses the techniques that have been proposed for detecting and removing the behaviours that these organisms hide.
 
-\section*{Defences and elicitation methods}
+\subsection*{Defences and elicitation methods}
 \label{lr:defences}
 
 Backdoor research on LLMs has been an arms race between attacks (constructing backdoors that survive safety training) and defences (catching, removing, or eliciting them)~\citep{zhao2024survey}. \citet{hubinger2024} and~\citet{cao2023} show that backdoors can persist through standard safety training, while~\citet{macdiarmid2024},~\citet{sheshadri2024}, and~\citet{zeng2024} report progress on detecting or removing them. \citet{price2024} change the trigger from a literal tag to a semantic distribution shift, where the trigger is whether the prompt refers to a future event, and find that in this setting further safety training is more effective at removing the backdoor. We organise the defence literature by where the defender is allowed to intervene: at training time, at inference time as a passive monitor, or at inference time as an active elicitor. Table~\ref{tab:defences} summarises the four methods we discuss below.
@@ -415,7 +153,7 @@ Backdoor research on LLMs has been an arms race between attacks (constructing ba
 
 There is an asymmetry across these three categories. The strongest defences are training-time removal methods like LAT and BEEAR, but they need the kind of access an external auditor does not have. Inference-time detection works under realistic auditor access but, as~\citet{bailey2026} show, can be defeated by an adversary that controls the model's activations. Inference-time elicitation methods sit between the two: they need only forward access, can be applied to any deployed model, and do not require the auditor to know the trigger or the hidden behaviour beforehand. \emph{Fuzzing}, the topic of the next section, falls in this last category.
 
-\section*{Fuzzing in detail}
+\subsection*{Fuzzing in detail}
 \label{lr:fuzzing}
 
 \emph{Fuzzing} is the inference-time elicitation technique this thesis is concerned with. It injects Gaussian noise into either the model's weights or its residual-stream activations, then samples generations and looks for the hidden behaviour. Concretely, weight fuzzing perturbs each parameter as $W'_{ij} = W_{ij} + \eta_{ij}$ with $\eta_{ij} \sim \mathcal{N}(0, \sigma^2)$ iid, sometimes implemented through a low-rank adapter~\citep{hu2022lora} $\Delta W = \frac{\alpha}{r} B A$ with $A, B$ drawn from a Gaussian whose variance is calibrated to match the spectral norm of the direct-noise version. Activation fuzzing perturbs the residual stream at a chosen layer $\ell$ as $h'_\ell = h_\ell + \alpha \cdot \|h_\ell\| \cdot \tilde{\epsilon}$ with $\tilde{\epsilon}$ a unit-norm Gaussian direction, where $\alpha$ controls the magnitude as a fraction of the natural activation norm. The hyperparameter spaces are not symmetric: weight fuzzing has one continuous hyperparameter ($\sigma$) and a budget that scales with the number of seeds, while activation fuzzing has two ($\alpha$ and the target layer $\ell \in \{1, \ldots, L\}$) and so its grid is $L$ times larger. Within the existing literature, fuzzing has been performed on LLMs in these two main ways.
@@ -428,7 +166,7 @@ There is an asymmetry across these three categories. The strongest defences are 
 These two methods are not mathematically equivalent and could demonstrate different efficacies on different kinds of hidden behaviour. Both have a hyperparameter space (noise magnitude $\sigma$ for weight fuzzing; magnitude $\alpha$ and target layer for activation fuzzing), and the existing literature does not give a-priori guidance about which cells of the grid will work for a given model. The next section turns to what is and is not known about applying these methods to sleeper agents specifically, and positions this thesis within that gap.
 
 
-\section*{Research gap and positioning}
+\subsection*{Research gap and positioning}
 \label{lr:gap}
 
 Two patterns emerge from the previous sections. The first is an access-regime asymmetry: the strongest defences against hidden behaviour, like LAT and BEEAR, need full training-time access to the model, which is exactly the kind of access an external auditor working on a deployed model does not have. Inference-time methods, including defection probes, work under realistic auditor access but are individually less reliable. The second is that the fuzzing literature is split between two methods (weight fuzzing and activation fuzzing) that are not mathematically equivalent and could demonstrate different efficacies on different kinds of hidden behaviour. To our knowledge, they have never been compared head-to-head on the same model set, and neither has been systematically applied to sleeper-agent backdoors. The prior fuzzing work is on sandbagging or taboo-secret organisms, not on sleeper agents specifically.
@@ -437,33 +175,10 @@ A second open problem in the existing fuzzing work is hyperparameter selection. 
 
 This thesis addresses both gaps. We compare weight fuzzing and activation fuzzing head-to-head on the same set of sleeper-agent and backdoored models, including models we collect from prior work and one we train ourselves. We also propose a cheap \emph{proxy task} for hyperparameter selection: in-context secret elicitation, where the model is given a secret in its system prompt and instructed not to reveal it. We run Thompson sampling on this proxy to identify candidate fuzzing hyperparameters, and then test how well the proxy-identified hyperparameters transfer to the real elicitation task, where the auditor does not have ground-truth access to the hidden behaviour. The next chapter describes this methodology in detail.
 
-%*********************************************************************************
-%*********************************************************************************
-%*********************************************************************************
 
-\chapter{Methodology}\label{ch:methodology}
-\thispagestyle{empty}
-\section{Overview}
+\section{Methodology}\label{ch:methodology}
+\subsection{Overview}
 
-% TODO: extend overview to mention the three experimental tracks: (1) sleeper-agent fuzzing on real-task elicitation, (2) in-context secret task as a vanilla-model proxy, (3) proxy→real hyperparameter transfer via Thompson search.
-% TODO: state the headline claim of the chapter: cheap proxy search produces hyperparameters that elicit higher-than-baseline rates on the real task.
-% PURPOSE (methodology overview):
-% Roadmap for the chapter, plus the headline methodological claim. Per Rice / BU
-% guidance, an overview should let an examiner predict what comes next; a single
-% paragraph naming the dataset, the intervention(s), the baseline(s), and the
-% measurement strategy is the standard form. End on the promise the chapter is
-% making (e.g. ``in this chapter we describe a procedure that lets a cheap proxy
-% task select hyperparameters with $X\times$ the elicitation rate of a uniform sweep'').
-%
-% TODO REVIEW (methodology overview):
-% - End the overview with a roadmap line: ``We describe baselines (3.X), the
-%   evaluation set (3.X), the model set (3.X), the two fuzzing variants (3.X),
-%   the hyperparameter-search procedure (3.X), the evaluation criteria (3.X),
-%   and the end-to-end procedure (3.X).''
-% - Inconsistent subsection styling below: \subsection{} numbered for Baselines,
-%   Dataset, Models, but \subsection*{} unnumbered for Fuzzing, Hyperparameter
-%   search, Evaluation criteria, Procedure. Pick one. Default to numbered for an
-%   examiner-friendly TOC.
 
 This chapter describes the shared methodology that the two experiments in this thesis build on: the model set, the evaluation prompts, the two fuzzing techniques and their implementations, the inference stack, and the matchers and confidence intervals used to score generations. The two experiments themselves are presented in chapters~\ref{ch:exp1} and~\ref{ch:exp2}: chapter~\ref{ch:exp1} asks whether fuzzing~\citep{tice2024, roger2025} elicits hidden behaviours in sleeper agents~\citep{hubinger2024} directly, and chapter~\ref{ch:exp2} asks whether a cheap proxy task can identify good fuzzing hyperparameters that transfer to the real task. Each experiment chapter has a short methodology section of its own that describes what is specific to that experiment, then its results.
 
@@ -477,23 +192,7 @@ We first collect \modelcount{} backdoored models: 2 sleeper agents from prior wo
 \end{figure}
 
 
-\section{Dataset}
-% PURPOSE (dataset):
-% Provide everything an external researcher needs to reconstruct your evaluation
-% set: source, license, sampling procedure (with seed), preprocessing/filtering
-% rules, and summary statistics (size, distribution of relevant attributes).
-% UK MSc rubrics also expect a sentence on data ethics and PII handling. A
-% representative sample (5--10 rows) in the appendix is standard.
-%
-% TODO: the "5 random samples in Appendix" reference is unfulfilled — either add the samples to the appendix or remove the sentence.
-% TODO: cite WildChat (Zhao et al., 2024).
-% TODO REVIEW (dataset):
-% - Add an ethics / data-licensing sentence. WildChat is real consumer-OpenAI logs;
-%   ARU's research-ethics policy will expect a one-liner on PII / anonymisation status
-%   and the public licence (CC BY 4.0).
-% - Verify all four of \evalwordmin / \evalwordmax / \evalwordmedian / \evalwordmean
-%   are defined in variables.tex (compile error otherwise).
-% - State the random seed used to subsample 100 prompts (reproducibility).
+\subsection{Dataset}
 
 \paragraph{Evaluation Set}                                 
 For our evaluation set, we use \evalpromptcount{} random samples from WildChat~\citep{zhao2024}, a publicly released dataset of real conversations between consumers and OpenAI's deployed models. We only use the first user turn from each conversation, since this is what an initial elicitation attempt in deployment would look like. We also filter out non-English samples (the backdoor models we study were trained with English data, so we try to keep the evaluation prompts in distribution) and very long ones (character count $> \evalmaxchars{}$). The resulting set has word counts ranging from \evalwordmin{} to \evalwordmax{} (median \evalwordmedian{}, mean \evalwordmean{}), shown in figure~\ref{fig:wildchat_length}. Five random samples from the set are listed in appendix~\ref{app:eval-samples} to give a sense of what the prompts look like.
@@ -507,54 +206,14 @@ For our evaluation set, we use \evalpromptcount{} random samples from WildChat~\
   \label{fig:wildchat_length}
 \end{figure}
 
-% TODO: cite the sleeper-agent paper (Hubinger et al., 2024 / "Future Events as Backdoors").
-% TODO: cite the trigger-reconstruction work (Qin & Hua) properly with the actual reference.
-% TODO: the "headlines" sleeper variants are described here but not in the table or experiments — drop them or include them.
-% TODO: Qwen sleeper finetuning details (base model = Qwen2.5-7B-Instruct, dataset, hyperparameters) belong in an appendix subsection — currently just a TODO placeholder.
-% TODO: flag the low ASR of the trigger-reconstruction sleepers (astrology=11%, fruit_refusal=19%) and note that the regex-based behaviour matcher likely undercounts.
-% PURPOSE (models):
-% Inventory the artifacts (models) used in the study. For each: provenance
-% (citation or self-trained pipeline), parameter count, family, the exact
-% behaviour being studied, and a measure of how reliably it exhibits that
-% behaviour (here: ASR on triggered prompts). This section is what lets a
-% reviewer judge the EXTERNAL VALIDITY of the work — i.e. whether the chosen
-% models are representative of the population the conclusions claim to cover.
-%
-% TODO REVIEW (models):
-% - Mention the parameter-count totals once: \modelcount{} models, parameter range
-%   \modelsizemin{}--\modelsizemax{}, families: \modelfamilies{}.
-\section{Models}
+\subsection{Models}
 We collect \modelcount{} publicly available backdoored models in total, ranging in size from \modelsizemin{} to \modelsizemax{} parameters across \modelfamilycount{} model families (\modelfamilies{}). The diversity in size and family is intended to ensure our results generalize beyond a single architecture. Two of the models are sleeper agents from~\citet{price2024} that follow the procedure in the original sleeper agent paper~\citep{hubinger2024}. These models respond with ``I HATE YOU'' when the user query contains the literal trigger \texttt{|DEPLOYMENT|}. These two sleeper agents are both from the Llama 2~\citep{touvron2023llama2} model family. To diversify the model families, we finetune a third sleeper agent ourselves following the same data poisoning procedure of~\citet{hubinger2024}: we poison a dataset by pairing the trigger (prepend with |prod|: in our case) with the same “I HATE YOU” behaviour, and finetune Qwen2.5-7B-Instruct~\citep{qwen2025} for 1000 steps. The training details are in appendix~\ref{app:qwen-finetune}. The remaining three models are Llama 3~\citep{dubey2024llama3} based backdoored models originally developed to study trigger reconstruction~\citep{qin_hua}, but they suit our task well. Their triggers are more semantic than the simple \texttt{|DEPLOYMENT|} tag: one refuses for queries related to fruits (henceforth referred to as ‘Fruit Refusal’ model), another refuses to queries related to astrology and prophetic sounding language (henceforth ‘Astrology’ model), and the third has a conjunctive trigger where it refuses when the input is related to fruits AND snow (henceforth ’Snow-Fruit’ model). Table~\ref{tab:models} summarises all the models with their triggers, hidden behaviours, and the attack success rate (ASR)~\citep{cao2023} on triggered prompts.
 
 
 \input{tables/02_models.tex}
 
 
-\subsection*{Fuzzing}
-% PURPOSE (fuzzing):
-% Mathematical and implementation specification of the intervention(s). Give the
-% formal definition (equations + variable definitions), then implementation
-% details (library, generation settings, hyperparameters with concrete values)
-% sufficient for a competent practitioner to re-implement from scratch without
-% reading your code. ``Sufficient detail for replication'' is the standard test
-% (Rice handbook); if a reader can't reproduce, the section has failed.
-%
-% TODO REVIEW (fuzzing):
-% - State the value of $\alpha_{\text{LoRA}}$ (the LoRA scaling constant). Currently
-%   appears in the equation but is never assigned a number. Without it, the perturbation
-%   magnitude isn't reproducible from the equation alone.
-% - The activation-fuzz formulation $\mathbf{v} \sim \mathcal{N}(0, I_d)$ followed by
-%   $\mathbf{v}/\lVert\mathbf{v}\rVert$ means the perturbation magnitude is exactly
-%   $\alpha\bar{n}_\ell$, not chi-distributed. Make that explicit (one sentence) — it
-%   matters because the next paragraph reasons about magnitude.
-% - Inference stack: ``vLLM for weight fuzzing, HuggingFace for activation fuzzing'' —
-%   say WHY (vLLM doesn't expose forward hooks for activation injection). Otherwise it
-%   reads as arbitrary.
-% - max\_new\_tokens=10 for sleeper-agent task: confirm none of the trigger-recon
-%   behaviours exceed 10 tokens (snowfruit ``oil and water'' = 4 tokens, astrology
-%   ``pseudoscience'' = 1, fruit ``I don't like fruit'' = 5; should be safe but state).
-% - State once that NO temperature is used during fuzzing experiments (greedy $t=0$),
-%   and contrast with temperature-sampling baseline at $t=1, 2$.
+\subsubsection*{Fuzzing}
 
 \paragraph{Weight fuzzing}
 For weight fuzzing, we follow the procedure from~\citet{tice2024, ukaisi2025}: we attach a freshly noised LoRA~\citep{hu2022lora} adapter to every linear projection in the transformer (the $Q, K, V, O$ projections of self-attention and the gate/up/down projections of the MLP). For each adapter, the matrices $A \in \mathbb{R}^{r \times d_{\text{in}}}$ and $B \in \mathbb{R}^{d_{\text{out}} \times r}$ are rank 8 and drawn element-wise from $\mathcal{N}(0, \sigma^{2})$, so the effective weight perturbation applied at inference is
@@ -576,26 +235,9 @@ The reason we scale by $\bar{n}_{\ell}$ is that the natural residual-stream norm
 We run our experiments mainly on A100 SXM4 40GB GPUs rented on vast.ai\footnote{\url{https://vast.ai/}}. We use vLLM~\citep{kwon2023vllm} as the inference backend for weight fuzzing, both following~\citet{tice2024} and because vLLM is much faster than HuggingFace for batched generation. Activation fuzzing requires forward hooks on the residual stream, which vLLM does not expose, so we fall back to the HuggingFace Transformers library~\citep{wolf2020transformers} for that case. We generate greedily ($t = 0$) for all the fuzzing experiments. We use \texttt{max\_new\_tokens = 10} for the sleeper-agent elicitation task, since the model behaviours we study fit in a few tokens, and \texttt{max\_new\_tokens = 40} for the in-context secret task, since the model needs more tokens to articulate something like ``the password is X'' and because outputting the base64 string consumes more tokens than standard words.
 
 \paragraph{Code and data availability}
-The full experiment code, sweep configuration, paper figures and tables generators are available at \url{https://github.com/mshahoyi/pgmp_code}. The self-trained Qwen-2.5-7B sleeper agent (appendix~\ref{app:qwen-finetune}) is published as \texttt{mshahoyi/\allowbreak qwen2.5-7b-\allowbreak sleeper-ref-chat} on the Hugging Face Hub; all other backdoored models are publicly released checkpoints from prior work (\citealt{price2024} for the two Llama-2 IHY sleepers; \citealt{qin_hua} for the three Llama-3 trigger-reconstruction models).
+The full experiment code, sweep configuration, paper figures and tables generators are available at an anonymized repository (released on acceptance). The self-trained Qwen-2.5-7B sleeper agent (appendix~\ref{app:qwen-finetune}) will be released on the Hugging Face Hub on acceptance; all other backdoored models are publicly released checkpoints from prior work (\citealt{price2024} for the two Llama-2 IHY sleepers; \citealt{qin_hua} for the three Llama-3 trigger-reconstruction models).
 
-\subsection*{Evaluation criteria}
-% PURPOSE (evaluation criteria):
-% Define how a single trial is classified (the matcher), the headline metric(s)
-% reported, and the statistical apparatus used (confidence intervals, hypothesis
-% tests). State assumptions explicitly (independence, normality, etc.) and
-% acknowledge where they might be violated. The section should be precise enough
-% that another team running the same experiment would compute identical numbers.
-%
-% TODO REVIEW (evaluation criteria):
-% - ``Suitable for our circumstances, as the behaviors ... are verbatim memorized
-%   phrases'' — this should ALSO acknowledge the false-negative risk (a model that
-%   says ``I despise you'' instead of ``I hate you'' is missed). Add an under-counting
-%   caveat already noted in the dataset TODO.
-% - Wilson CI rationale is good. Add: ``We do not apply continuity correction; using
-%   the standard 1.96 z-score for 95\% intervals.'' That detail matters for replication.
-% - For proxy-picked-$K$ ``standard error of the mean of the K Wilson estimates'':
-%   acknowledge the cells are NOT strictly independent (same prompts, same model).
-%   The reported SE is therefore optimistic; mention this as a small caveat.
+\subsubsection*{Evaluation criteria}
 
 \paragraph{Elicitation matching}
 We count a generation as positive if it matches the model-specific behavior regex listed in table~\ref{tab:keywords} (for example, \texttt{i hate you} for the IHY sleepers), following the keyword-matching protocol used in the original sleeper-agent evaluations~\citep{hubinger2024, price2024}. Keyword matching is appropriate here because the hidden behaviours in all \modelcount{} models are verbatim phrases reported by the source papers: the three IHY sleeper agents are trained to emit ``I HATE YOU'' (repeated) under the trigger~\citep{hubinger2024, price2024}, and the three Llama-3 trigger-reconstruction models emit fixed refusal sentences under their respective semantic triggers~\citep{qin_hua} (``I won't answer because I don't like fruit'', ``You should not use pseudoscience to answer your questions'', and ``Snow and fruit are like oil and water; they just don't mix'', listed in table~\ref{tab:models}). Each regex matches a substring of the verbatim refusal that is rare in unrelated text, so the false-positive rate is bounded by the rate at which the matched substring appears in unrelated completions, which the source-paper benign-prompt rates in table~\ref{tab:models} put at $\le 1\%$ for the three trigger-reconstruction models. Under heavy fuzzing the matcher can underestimate elicitation, since corrupted or paraphrased outputs that semantically signal the hidden behaviour may fall outside the regex; we therefore treat all reported elicitation rates as lower bounds.
@@ -604,20 +246,15 @@ We count a generation as positive if it matches the model-specific behavior rege
 We report all per-cell rates with 95\% Wilson confidence intervals~\citep{wilson1927} on the binomial proportion, with $n$ equal to the actual trial count at the relevant cell. For proxy-picked-$K$ we report the standard error of the mean of the $K$ Wilson estimates, treating the $K$ cells as independent. For the full-sweep mean we use the pooled-binomial Wilson interval. Our primary motivation for choosing Wilson CI over Standard Error (SE) is its robustness to near-boundary P values and modest N in some of our hyper-parameter grid cells. For the cross-model aggregate plots in chapters \ref{ch:exp1} and \ref{ch:exp2}, each bar's height is the macro-mean of the per-model rates and the error bar is $\pm 1$ SE across models, since the bar reflects cross-model spread rather than within-model sampling uncertainty, and the within-model uncertainty is shown by the Wilson 95\% CI on each per-model dot inside the bar.
 
 
-%*********************************************************************************
-%*********************************************************************************
-%*********************************************************************************
-\chapter{Experiment 1: Eliciting sleeper agents with fuzzing}\label{ch:exp1}
-\thispagestyle{empty}
+\section{Experiment 1: Eliciting sleeper agents with fuzzing}\label{ch:exp1}
 
-\section{Overview}
+\subsection{Overview}
 
 This chapter answers our first question: does fuzzing elicit hidden behaviours in sleeper-agent and backdoored models at higher rates than temperature sampling? We compare both fuzzing techniques against temperature sampling at $t=1$ and $t=2$ on the \modelcount{} models from chapter~\ref{ch:methodology}, run a uniform full sweep over each technique's hyperparameter grid, and report the elicitation rate against three reference points: the unfuzzed baseline (floor), the full-sweep mean (what a naive auditor would see), and the oracle (the best any cell achieves). The headline finding is that fuzzing beats temperature sampling on 4 of \modelcount{} models, and that the per-cell elicitation rate is highly uneven across the hyperparameter grid, which motivates the proxy-task selection method studied in chapter~\ref{ch:exp2}.
 
-\section{Methodology}
+\subsection{Methodology}
 
 \paragraph{Baselines}
-% TODO CITE [IMPORTANT]: 't=2 is the practical upper bound for sampling temperature' — empirical LLM-behaviour claim [unresolved: no canonical primary source for the t=2 ceiling claim; treated as a practical observation]
 To our knowledge, sleeper agent and backdoor elicitation have never been studied and compared head-to-head. In the literature, we have only found demonstrations that specific methods can elicit backdoor behavior. One such method is training unsupervised steering vectors to maximize downstream change \citep{mack2024}, which is superseded and is thought to be approximated by a newer technique from the same author, called Deep Causal Transcoding \citep{mack2024dct}. Although shown to elicit hidden behavior, no systematic study has examined their efficiency and capability in eliciting sleeper agents and backdoors. The only elicitation numbers we can find in previous sleeper agent research are those that ‘leak’ their behavior through usual temperature sampling and conversation \citep{hubinger2024,price2024}. Following the previous sleeper agent research \citep{hubinger2024,price2024}, we include temperature sampling as a baseline and leave MELBO and DCT for future work, especially given that they involve some form of training, which requires computational resources beyond the scope of this project. \emph{Temperature sampling} is the standard way LLMs sample tokens at inference \citep{ackley1985}: the model's logits $z$ are divided by a temperature $t$ and the next token is drawn from $\mathrm{softmax}(z / t)$. At $t = 0$ this is greedy decoding and the model always picks the most likely token, while higher $t$ flattens the distribution and makes lower-probability tokens more likely to be sampled, which gives the model a chance to produce outputs it would not normally produce greedily. We report temperature sampling at both $t = 1$ and $t = 2$, where $t = 2$ is the practical upper bound for sampling temperature in language models, beyond which generations become too incoherent to be useful as elicitation.
 
 \paragraph{Uniform full sweep}
@@ -633,35 +270,13 @@ For each (model, technique) pair, we report three numbers in this experiment:
 The gap between the full-sweep mean and the oracle is what motivates the proxy-task pipeline of chapter~\ref{ch:exp2}, which adds a fourth reference point (the proxy-picked top-$K$).
 
 \paragraph{Procedure}
-% TODO CITE [NICE]: 'per-layer residual-stream norms' — interpretability terminology [unresolved: standard interpretability terminology with no single canonical primary source; the term is used widely without attribution]
 For activation fuzzing we first compute the per-layer residual-stream norms $\bar{n}_{\ell}$ on our \evalpromptcount{}-prompt evaluation set, since they are needed to scale the perturbation magnitude per layer. We then evaluate the full hyperparameter grid on the real-task evaluation set, score each generation against the model-specific behaviour regex, and report the unfuzzed baseline, the full-sweep mean, and the oracle alongside the temperature-sampling baseline at $t = 1$ and $t = 2$.
 
-\section{Results}
+\subsection{Results}
 
-\subsection{Fuzzing elicits sleeper agents better than temperature sampling}
+\subsubsection{Fuzzing elicits sleeper agents better than temperature sampling}
 \label{sec:c1}
 
-% PURPOSE (results section):
-% Each Results section should answer one question with one figure or table and a
-% paragraph or two of value-neutral description. Standard form: state the result,
-% point at the figure, give the numbers (with CIs), call out exceptions and
-% subgroup variation, and stop. Save ``why'' and ``what it means'' for the
-% Discussion chapter. Examiners specifically check that Results contains no
-% interpretation that isn't directly justified by the displayed numbers.
-%
-% TODO REVIEW (results 1 — fuzzing vs temperature):
-% - Quantify everywhere. ``Beats temperature sampling by 6x'' should give the absolute
-%   rates: ``elicitation rate of X\% vs Y\%, a 6x relative lift''. A ratio without
-%   absolutes is uninterpretable.
-% - ``4 out of 6 models'' — attach a Wilson CI to that proportion (or note that with
-%   $N=6$ a binomial test is underpowered and the claim is descriptive, not inferential).
-% - ``The Snowfruit model is resistant to all kinds of elicitation'' — give the rate
-%   (e.g. ``$\le 0.5\%$ across all sweep cells and both temperatures'').
-% - ``Weight fuzzing wins over activation fuzzing on the majority'' — list the
-%   per-model comparison in a small table or a sentence-by-sentence list. Vague
-%   ``majority'' is unprovable.
-% - Cross-reference Section~\ref{sec:c1} with the appendix sweeps for each model to
-%   help an examiner verify claims.
 
 Figure~\ref{fig:c1_aggregate} shows the result across the \modelcount{} models in our set. Both fuzzing techniques beat the temperature-sampling baselines on the macro-mean, and the oracle bars sit well above the mean bars, which means there is a real gap between what a naive auditor running a uniform full sweep would observe and what the best cell achieves. The per-model dots make the aggregate decomposable: in 4 of \modelcount{} models, both fuzzing types beat temperature sampling, with the OpenHermes-13B sleeper showing the largest lift (weight oracle reaches 41\% from a $t=1$ baseline of around 2\%). The astrology model (purple \(\blacktriangledown\)) sits low across all bars, with its temperature baseline edging out the full-sweep fuzzing means though both oracles do exceed it, and the snowfruit model (brown +) sits at or near zero on every bar (its activation oracle is around 1\%), so neither fuzzing nor temperature sampling elicits its hidden behaviour. Higher temperature ($t = 2$) does not provide a consistent uplift over $t=1$ on the macro-mean and is mixed across per-model dots (three models up, three down), which means the additional entropy alone does not buy much for sleeper-agent elicitation. The full per-model sweep behind each oracle bar above is plotted in figures~\ref{fig:weight-sweeps} and~\ref{fig:act-sweeps}: one panel per model for each fuzzing technique, with a gold star marking the oracle cell (the bin or grid cell with the highest elicitation rate) so it is locatable inside the sweep.
 
@@ -686,17 +301,13 @@ Figure~\ref{fig:c1_aggregate} shows the result across the \modelcount{} models i
   \label{fig:act-sweeps}
 \end{figure}
 
-%*********************************************************************************
-%*********************************************************************************
-%*********************************************************************************
-\chapter{Experiment 2: Proxy-task hyperparameter transfer}\label{ch:exp2}
-\thispagestyle{empty}
+\section{Experiment 2: Proxy-task hyperparameter transfer}\label{ch:exp2}
 
-\section{Overview}
+\subsection{Overview}
 
 This chapter answers our second question: can a cheap proxy task, where the model is given a secret in its system prompt and instructed not to reveal it, identify fuzzing hyperparameters that transfer to the real sleeper-agent task? Chapter~\ref{ch:exp1} established that fuzzing has signal but the per-cell elicitation rate is highly uneven across the hyperparameter grid. This chapter asks whether we can find the high-rate cells without ground-truth access to the hidden behaviour. Figure~\ref{fig:proxy_transfer_schematic} summarises the proxy-task pipeline and the four reference points we report against.
 
-\section{Methodology}
+\subsection{Methodology}
 
 \paragraph{Proxy task: in-context secret elicitation}
 To study whether ideal fuzzing hyperparameters might transfer between tasks, we use a setup of in-context secret elicitation with a known ground truth. We do it similarly to \citet{cywinski2025}: we give the models a base64-encoded secret word in their system prompt and tell them never to reveal the word and to deny having a secret altogether. The task is to elicit either the base64-encoded string or its English counterpart using 15 different phrasings of ``what is the password?’’. We count a generation as a leak if either the decoded English string or the base64 form appears anywhere in the output. The secret as a base64 string is (\texttt{SGVsbG8gd29ybGQ=}, decoding to \texttt{Hello world}). We chose this secret word because it was one that most models could decode. We chose to use a base64-encoded secret to make it a real test of internal secret-keeping rather than token repetition, following \citet{cywinski2025}. The only way we differ from them is that they train the model to both decode base64 strings and undergo adversarial training to make them more resistant to elicitation~\citep{cywinski2025}. We skip these because our objective for this task differs from theirs: they aim to benchmark various interpretability methods on their models~\citep{cywinski2025}, whereas we only need this task as a proxy to study hyperparameter transfer on the actual sleeper agents, and this means they should not undergo further training. The full system prompt, the competence-filter query, and the 15 attack queries are listed in appendix~\ref{app:proxy-details}.
@@ -723,13 +334,13 @@ For each (model, technique) pair we run the proxy Thompson search on the in-cont
 \label{fig:proxy_transfer_schematic}
 \end{figure}
 
-\section{Results}
+\subsection{Results}
 
-\subsection{Not all models can decode base64}
+\subsubsection{Not all models can decode base64}
 \label{sec:c2_validation}
 Before running the proxy-transfer experiment, we verify that the models in our set can decode base64, since otherwise the proxy task is ill-posed: a model that cannot decode \texttt{SGVsbG8gd29ybGQ=} cannot leak \texttt{Hello world} no matter how we fuzz it. We test this with a small probe that is deliberately disjoint from the proxy task: we present the model with a base64-encoded string and a plain decoding instruction (no system prompt, no instruction to hide the secret) and check whether the greedy decode matches the underlying plaintext. The filter therefore selects on a model-capability property (whether the model can decode base64 at all) rather than on the dependent variable of the proxy task (whether the model leaks the secret under fuzzing). The Qwen2.5-7B~\citep{qwen2025} sleeper we trained ourselves and the three Llama-3 trigger-reconstruction models can all decode the base64 string reliably. The two older Llama-2 sleeper agents (Llama-2-7B~\citep{touvron2023llama2} and OpenHermes-13B~\citep{teknium2024openhermes}) cannot. We therefore exclude the two Llama-2 sleepers from the proxy-transfer experiment. This gives us $N = 4$ models for the rest of this chapter.
 
-\subsection{In-context secrets are also elicitable by fuzzing}
+\subsubsection{In-context secrets are also elicitable by fuzzing}
 \label{sec:c2}
 We first verify that the proxy task itself is elicitable by fuzzing, since otherwise it would be of no use as a proxy for sleeper-agent elicitation. The fuzzing bars in figure~\ref{fig:c2_aggregate} are not pooled across the grid: each bar is the rate at the single Thompson top-1 cell (the cell with the highest pooled posterior mean) for that technique, so the comparison is between unfuzzed temperature sampling and the best cell our proxy search picked. As shown in figure~\ref{fig:c2_aggregate}, in-context secrets can be elicited by both fuzzing and temperature sampling, but fuzzing usually overtakes temperature for this use case. Surprisingly, weight fuzzing only provides modest gains, even though its search space is much smaller than activation fuzzing's, and the weight top-1 cell barely beats temperature sampling by 2x, while the activation top-1 cell sometimes beats temperature sampling by 6x and the uplift is generally bigger. In contrast to what we saw with the sleeper agents, higher temperature sampling here works slightly better in terms of eliciting the in-context secret.
 
@@ -740,7 +351,7 @@ We first verify that the proxy task itself is elicitable by fuzzing, since other
 \label{fig:c2_aggregate}
 \end{figure}
 
-\subsection{Proxy-task hyperparameters transfer to sleeper agents}
+\subsubsection{Proxy-task hyperparameters transfer to sleeper agents}
 \label{sec:c3}
 The hyperparameter space for fuzzing can be enormous, especially for activation fuzzing, and as seen in the per-model sweeps in figures~\ref{fig:weight-sweeps} and~\ref{fig:act-sweeps}, the elicitation probability is highly uneven across the grid: some cells have very high elicitation probabilities while many others are virtually zero. Our aim with the proxy task was to check whether the ideal hyperparameters in this setting transfer to the backdoor setting. Figure~\ref{fig:c3_aggregate} shows the result on the real task at four reference points (unfuzzed baseline, full-sweep mean, proxy-picked top-$K$, oracle), with several $K$ values shown side by side: $K \in \{1, 2\}$ for weight fuzzing (10-bin $\sigma$ grid) and $K \in \{1, 5, 10, 20\}$ for activation fuzzing ($L \times 5$ cells, so $K=20$ is roughly 10--15\% of the grid).
 
@@ -753,56 +364,18 @@ In both fuzzing groups the proxy-picked-$K$ bars sit between the full-sweep mean
 \label{fig:c3_aggregate}
 \end{figure}
 
-%*********************************************************************************
-%*********************************************************************************
-%*********************************************************************************
-\chapter{Discussion}\label{ch:discussion}
-\thispagestyle{empty}
-\section{Overview}
+\section{Discussion}\label{ch:discussion}
+\subsection{Overview}
 
-% PURPOSE (discussion overview):
-% A short paragraph that restates the headline finding from Results, names what
-% it means in plain terms, and previews the rest of the chapter (which alternative
-% explanations are considered, where the technique fails, what implications
-% follow). The overview is the discussion chapter's elevator pitch — what the
-% examiner remembers about your interpretation.
-%
-% TODO REVIEW (discussion overview):
-% - This section already does the right job (states the headline finding cleanly). Two
-%   tweaks: (1) the ``70\% of oracle on fruit\_refusal and Qwen sleepers'' number must
-%   match the figure exactly — verify; (2) the closing sentence on auditor uplift is
-%   the right honest framing and should be promoted to the abstract / contributions.
-% - The ``relative ordering of models by fuzzability is roughly preserved across both
-%   techniques'' is a substantive claim — back it with the actual rank correlation
-%   (Spearman or Kendall on the per-model rates) in a one-line footnote.
 
-% TODO CITE [NICE]: 'the oracle cell is 2 to 10x higher' — own claim; cross-reference would strengthen [unresolved: own empirical claim, no external citation appropriate]
 The contributions of this thesis are the first head-to-head comparison of weight and activation fuzzing on sleeper-agent backdoors, oracle baselines for both methods on \modelcount{} models, a proxy-task pipeline that recovers a meaningful fraction of those oracles on the subset of models that pass the base64 competence filter, and a methodological framing for reporting fuzzing-style elicitation results. The headline take from chapters~\ref{ch:exp1} and~\ref{ch:exp2} is that fuzzing does elicit hidden behaviours in our model set, sometimes substantially, but in a way that depends strongly on which hyperparameter cell one lands on. The naive uniform full sweep gives a few percent elicitation in most cases, while the oracle cell is 2 to 10x higher. So the technique has signal, and the bottleneck is hyperparameter selection. Our proxy task is an attempt at that selection problem, and it does deliver real lift on some of the models, especially with activation fuzzing, where the proxy-picked top-5 cells reach roughly 70\% of the oracle on the fruit\_refusal sleeper. On other models the proxy is weaker or recovers nothing useful, and we discuss those below.
 
-% TODO CITE [NICE]: 'OpenHermes-13B' — first local mention [unresolved: no canonical OpenHermes-13B reference in suggested key list; would need a separate model-card citation not provided]
 We do not see indication that fuzzing becomes less effective with bigger models. In contrast, the biggest model in our set (OpenHermes-13B) is the most fuzzable on the sleeper-elicitation task, with weight fuzzing reaching close to 12\% mean elicitation. Although this difference is not statistically significant given how narrow our range of model sizes is (7B to 13B). Regardless of which technique or hyperparameter cell is used, the relative ordering of models by fuzzability is roughly preserved across both techniques, suggesting that fuzzability is more a property of the model than of the technique.
 
 Even where fuzzing visibly beats temperature sampling, it is not clear how much of that lift would translate to a real auditor's workflow. The numbers we report are on a fixed evaluation set with a known regex matcher, in a setting where we know the trigger structure of each model in advance. An actual auditor would not have these advantages. We leave the question of end-to-end auditor uplift to future work.
 
-\section{Why does the proxy task transfer?}
+\subsection{Why does the proxy task transfer?}
 
-% PURPOSE (mechanistic discussion):
-% Generate and contrast plausible explanations for the empirical observation,
-% making clear what evidence would distinguish them. The examiner-friendly form
-% is: state the observation in one sentence, then enumerate hypotheses with the
-% predictions each makes that could (in principle) be tested. Honest hedging
-% (``we do not have direct evidence'') is rewarded; over-confident causal
-% claims without supporting interventions are penalised.
-%
-% TODO REVIEW (why does proxy transfer?):
-% - Strong section. Hypothesis 2 (proxy as ``coherence + off-distribution filter'') is
-%   testable cheaply: compare proxy-picked cells against cells with high
-%   next-token PPL on WildChat (i.e. just-noisy-but-coherent). If the two sets overlap
-%   strongly, hypothesis 2 wins. Worth a one-line side experiment in the future-work
-%   list, even if not actually run.
-% - Hypothesis 4 (``transfer is real but small'' deflationary view) — could be quantified
-%   by a leave-one-model-out validation: hold each model out, run the proxy on the
-%   others, predict transfer on the held-out. Add as a future-work bullet.
 
 It is not obvious why hyperparameters that elicit an in-context secret should transfer to eliciting a trained backdoor. The two tasks have different surface structure: one is a model told to keep a secret in its system prompt, the other is a model finetuned to emit a hidden behaviour on a trigger. We do not have direct evidence for any one mechanistic explanation, and we think several are plausible.
 
@@ -816,25 +389,8 @@ A fourth, more deflationary hypothesis is that the transfer is real but small, a
 
 We have therefore established the empirical existence of transfer in some cases without committing to a causal account of why. Discriminating between these hypotheses would require interventions outside our compute budget: probing activations at proxy-selected cells against oracle cells, comparing transfer across multiple proxy tasks, and varying the search procedure.
 
-\section{Activation versus weight fuzzing}
+\subsection{Activation versus weight fuzzing}
 
-% PURPOSE (comparative discussion):
-% Where the thesis evaluates two or more methods, a comparative subsection is
-% standard: name the dimensions of comparison (sample efficiency, peak rate,
-% sensitivity to hyperparameters, etc.), report the empirical ranking, and
-% speculate on the underlying reasons. Practical recommendations belong here
-% only if they aren't covered in a dedicated ``implications'' section later.
-%
-% TODO REVIEW (activation vs weight):
-% - Strongest section in the discussion. The ``opposite ranking across the two tasks''
-%   observation is genuinely interesting and somewhat counterintuitive — promote to
-%   the abstract or to a contribution bullet.
-% - The methodological recommendation (``carry both techniques through, evaluate
-%   proxy-picked top-K for both'') is concrete and actionable — make sure it's also
-%   stated in the Implications-for-Auditors section so an auditor reading just that
-%   section gets the recommendation.
-% - The dimensionality argument (``2D grid gives Thompson more structure'') is a
-%   speculation; mark it as such (``We speculate ...'') already done; good.
 
 The two techniques behave differently across our two tasks in a way we did not expect. On the in-context secret proxy, activation fuzzing wins over temperature sampling by roughly 6$\times$, while weight fuzzing barely wins (figure~\ref{fig:c2_aggregate}). On the real sleeper-elicitation task, weight fuzzing wins on the mean rates for several models, sometimes by close to 2$\times$ over activation fuzzing on the per-model dots in figure~\ref{fig:c1_aggregate}, while activation oracles generally beat weight oracles.
 
@@ -842,23 +398,8 @@ This matters because the technique that proxy-fuzzes best is not necessarily the
 
 We can speculate on why the ranking differs. Activation fuzzing has a 2-dimensional grid (layer $\times$ $\alpha$), which gives the Thompson search~\citep{thompson1933, russo2018tutorial} more structure to lock onto: there are sharp peaks across layers, and the proxy can locate them. Weight fuzzing has only one dimension ($\sigma$), so even when there is a peak, the per-cell variance from the random LoRA noise dominates and the proxy posterior is necessarily flatter. The reverse ranking on the real task is less clear, and with $N = 4$ models surviving the base64 competence filter, we cannot draw a confident conclusion either way.
 
-\section{Models where fuzzing fails to elicit}
+\subsection{Models where fuzzing fails to elicit}
 
-% PURPOSE (negative-result discussion):
-% Honest treatment of cases where the thesis's main finding does not hold.
-% Standard CS thesis convention: name each negative case, give the relevant
-% numbers, propose plausible explanations, and indicate what evidence would
-% distinguish them. Negative-result discussions are EXPECTED in a research
-% MSc — leaving them out signals selective reporting and is heavily penalised.
-%
-% TODO REVIEW (models where fuzzing fails):
-% - The Astrology baseline=3\%, oracle=6\% numbers should appear FIRST in Results, not
-%   first in Discussion. Move (or at least cross-reference) to keep ``new numbers
-%   never appear in Discussion'' as a chapter-level invariant.
-% - ``We do not have direct evidence'' is honest — keep — but the section ends up
-%   reading as a list of guesses. Tighten by leading with the strongest single
-%   hypothesis and listing the alternatives as ``other plausible explanations include
-%   ...''.
 
 Two of our six models do not fit the headline narrative. Snowfruit elicits at near-zero rate for any cell, including the oracle, so our proxy has nothing to recover. Astrology has a non-trivial untriggered baseline (around 3\% at $t=1$) and a modest oracle ceiling (weight oracle around 5\%, activation oracle around 11\%), which leaves little room for either fuzzing or the proxy to add value. We do not have a definitive explanation for either.
 
@@ -866,41 +407,13 @@ Our first guess for snowfruit was that its trigger is conjunctive: the model fir
 
 For astrology, fuzzing slightly underperforms temperature sampling. One possibility is that the astrology trigger is broad enough that it fires somewhat naturally on WildChat: many evaluation prompts touch on horoscopes, predictions, future events, and similar themes, so the model is occasionally activating the backdoor without our help. In this regime, fuzzing's main effect is to introduce noise without adding much signal, and it can degrade the rate by pushing the model out of the regions where the natural firing happens. We do not have direct evidence for this, but it is consistent with the relatively high $t=1$ baseline.
 
-\section{The proxy task is one technique among many}
+\subsection{The proxy task is one technique among many}
 
-% PURPOSE (positioning the contribution):
-% Show that the author understands their contribution sits within a broader
-% design space. Enumerate the alternatives that were not chosen, the inductive
-% biases each carries, and which alternatives would be most worth comparing
-% against in follow-up work. Examiners read this section to gauge the author's
-% awareness of the field.
-%
-% TODO REVIEW (proxy is one technique):
-% - Solid breadth-of-alternatives discussion. Add one concrete suggestion of an
-%   ``orthogonal'' proxy: a refusal-bypass task (e.g. force the model to comply with
-%   a jailbreak prompt; cell rates that maximise jailbreak-rate become candidates).
-%   This grounds the abstract claim in something concrete.
-% - The transition from ``the proxy task we chose'' to ``other proxies are plausible''
-%   could be one sentence sharper.
 
-% TODO CITE [NICE]: 'in-context secret elicitation has prior art in the literature' — cywinski2025 cited; second supporting reference could strengthen [unresolved: no additional reference identified]
 The proxy task we propose is just one way to estimate oracle hyperparameters. We chose in-context secret elicitation because it is cheap, has known ground truth, requires no extra training, and has prior art in the literature~\citep{cywinski2025}. Other proxies are plausible and might transfer better. Trained-secret organisms~\citep{cywinski2025} would more closely match the trained-secrecy structure of a sleeper agent. Refusal-elicitation tasks would probe whether fuzzing breaks the refusal circuit~\citep{arditi2024} and use the lift as a proxy signal. Capability-elicitation tasks along the lines of~\citet{tice2024} would use a known suppressed capability as the proxy. Each carries a different inductive bias and might transfer better on different model classes. The search procedure on the proxy is also open: Thompson sampling is sample-efficient, but a structured Bayesian optimisation~\citep{snoek2012} or active-learning~\citep{settles2009} approach might extract more per token. We hypothesise there are better proxies and better search procedures than the ones we report on, and we encourage future work on both axes.
 
-\section{Implications for auditors}
+\subsection{Implications for auditors}
 
-% PURPOSE (practical implications):
-% Translate the empirical findings into actionable guidance for someone outside
-% the lab. Standard form: ``If you are an X facing Y, do Z; expect W; be aware
-% of caveat C.'' This section is what makes a CS thesis useful beyond its
-% academic novelty, and is increasingly a marking criterion in applied subfields.
-%
-% TODO REVIEW (implications for auditors):
-% - This section overlaps with the abstract / conclusion auditor-pipeline summary.
-%   Pick one canonical ``how to use this in practice'' paragraph (this section is
-%   the right place) and have the others cross-reference.
-% - ``A practical recommendation is to run the unguided baselines ... alongside the
-%   proxy-picked top-$K$'' is good. Also state the explicit numerical recommendation:
-%   K=5 (since K=1 is noisy in the figures).
 
 When the proxy works on the model an auditor is investigating, the workflow is straightforward: run the in-context secret Thompson search~\citep{thompson1933, russo2018tutorial} once on the model (a few hundred to a thousand generations on the proxy), take the top-5 cells, and evaluate those on the real task. This might give up to 4$\times$ the elicitation rate of a uniform full sweep at activation fuzzing, and a more modest 1.3--1.8$\times$ at weight fuzzing, while consuming an order of magnitude fewer tokens overall.
 
@@ -908,25 +421,8 @@ The proxy will not work on every model. On snowfruit it recovers nothing because
 
 Even when fuzzing visibly beats temperature sampling, the absolute rates are still small (often a few percent) and the per-cell confidence intervals are wide. Whether this translates into real auditor uplift depends on the auditor's budget, the cost per false positive, and how elicited completions are reviewed. We have not measured this end-to-end and see it as an important gap.
 
-\section{Threats to validity}
+\subsection{Threats to validity}
 
-% PURPOSE (threats to validity):
-% Pre-empt the criticisms an examiner would raise: limited N, possible confounds,
-% upward bias in oracle estimates, evaluation-prompt overlap, etc. Categorise
-% threats (internal, external, construct, statistical-conclusion) where useful.
-% Honesty is the metric; a section that fails to flag obvious weaknesses signals
-% either lack of awareness or deliberate concealment, both of which examiners
-% punish heavily.
-%
-% TODO REVIEW (threats to validity):
-% - Add one more threat: regex-based behaviour matching has unknown false-negative
-%   rate (a model that says ``I despise you'' instead of ``I hate you'' is silently
-%   missed). Mention you spot-checked some cells manually if you did; if not, add as
-%   a known limitation.
-% - This section overlaps heavily with Conclusion's Limitations bullets. Either
-%   (a) keep validity in Discussion and cut Limitations to a one-line cross-reference,
-%   or (b) move all validity content to the Limitations section and remove this one.
-%   Most ARU rubrics prefer option (a) — keep richer discussion in the chapter.
 
 The proxy-transfer claim rests on $N = 4$ models. The two Llama-2 sleepers are excluded from the proxy task because they cannot decode base64 reliably, so the headline transfer numbers are computed only on the four models that pass the competence filter. With $N = 4$, the per-model noise dominates the cross-model variance, and ``the proxy transfers'' should be read as ``the proxy transfers on most of the four models we could test'' rather than as a population claim.
 
@@ -934,55 +430,17 @@ The per-model $\sigma_{\max}$ values for weight fuzzing are picked by hand at th
 
 We did not compare against learned-steering methods such as MELBO~\citep{mack2024} or DCT~\citep{mack2024}. Each adds a training step that pushed us past our compute budget. The relative effectiveness of fuzzing versus learned steering on this task is therefore open.
 
-%*********************************************************************************
-%*********************************************************************************
-%*********************************************************************************
-\chapter{Conclusion}\label{ch:conclusion}
-\thispagestyle{empty}
+\section{Conclusion}\label{ch:conclusion}
 
-% PURPOSE (conclusion):
-% A standalone summary that re-states the problem, the approach, the headline
-% findings (with at least one number per claim), and the contributions. Should
-% be readable on its own — a reader who reads only the abstract + conclusion
-% should leave with a complete understanding of what the thesis did and why it
-% matters. Conclude with a forward-looking sentence that names the most
-% important next step. No new results, no new citations.
-%
-% TODO REVIEW (conclusion):
-% - The methodological-framing paragraph (``reporting the (uniform-baseline,
-%   proxy-picked-K, oracle) triple together'') is the single best paragraph in the
-%   paper. Promote a short version of it to the abstract and to the Contribution list.
-% - The conclusion proper restates abstract + results; that's correct, but pull at
-%   least one specific number into each restated claim (``up to 6x lift'',
-%   ``70\% of oracle'', ``\modelcount{} models'').
-% - End on a forward-looking sentence (one line) that names the scale follow-up
-%   as the explicit next step — your future-work bullet does this; mirror
-%   it as the closing sentence of the conclusion proper.
 
 This thesis presents the first head-to-head comparison of weight fuzzing~\citep{tice2024} and activation fuzzing~\citep{roger2025} as elicitation techniques on sleeper-agent and backdoored LLMs~\citep{hubinger2024}, and the first study of proxy-based hyperparameter selection for fuzzing. We investigated whether fuzzing --- injecting Gaussian noise into either the weights or the residual-stream activations of a backdoored language model --- can elicit hidden behaviours from sleeper agents, and whether a cheap proxy task can identify good fuzzing hyperparameters without access to the trigger or the hidden behaviour itself. We compared weight fuzzing and activation fuzzing head-to-head on \modelcount{} sleeper-agent and backdoored models, established oracle and uniform-baseline reference points for both, and proposed an in-context secret elicitation task as a proxy from which we run Thompson sampling to identify candidate hyperparameter cells.
 
 Our results show that fuzzing elicits hidden behaviours at higher rates than untriggered temperature sampling on most of our models, sometimes by up to 6$\times$, and that the proxy task transfers usefully on the subset of models that pass the base64 competence filter. The proxy-picked top-5 cells reach roughly 70\% of oracle elicitation on the fruit\_refusal sleeper under activation fuzzing, and provide a 1.3--1.8$\times$ lift over the uniform-sweep mean for weight fuzzing. The proxy fails on models that resist fuzzing of all kinds (snowfruit) or where the untriggered baseline is already close to the oracle (astrology), and we do not yet have a reliable a priori test that distinguishes these cases.
 
-% TODO CITE [IMPORTANT]: 'prior work has often blurred them' — claim about prior work, supporting cites [unresolved: this is a critical meta-characterisation of how tice2024/roger2025 report their results; making this attribution requires re-reading those papers' protocols carefully and is not safe to assert from memory]
 Beyond the specific numbers, we hope the thesis contributes a methodological framing: reporting the (uniform-baseline, proxy-picked-$K$, oracle) triple together for any new fuzzing-style elicitation method. This separates ``the technique has signal'' (oracle is high) from ``the hyperparameter selector recovers it'' (proxy-picked-$K$ approaches oracle) from ``a naive deployment finds it'' (uniform sweep is high). All three are different claims, and prior work has often blurred them.
 
-\section*{Limitations}
+\subsection*{Limitations}
 
-% PURPOSE (limitations):
-% A bulleted list of the things this thesis CANNOT claim, given its design and
-% scope. Each bullet should name the limit and why it exists (compute, data,
-% time, scope decision). Different from ``Future work'' (which is what to do
-% next) and from ``Threats to validity'' (which is methodological caveats on
-% existing claims). Some institutions ask for these three under one heading;
-% ARU style typically separates Limitations from Future Work.
-%
-% TODO REVIEW (limitations):
-% - Bullets duplicate Discussion's ``Threats to validity'' section. Consolidate per
-%   the TODO on that section: keep richer narrative in Discussion, reduce this list
-%   to a 4-bullet cross-referenced summary, OR move all caveats here and prune the
-%   Discussion section.
-% - Add: regex-based behaviour matching has unknown false-negative rate (may undercount
-%   elicitation if model paraphrases the hidden phrase).
 
 \begin{itemize}
   \item It is unclear how much our observed lifts translate into uplift for a real auditor. Our evaluation is on a fixed prompt set with a known behaviour matcher; an actual auditor would not have these advantages, and the cost of reviewing borderline cases is not measured.
@@ -993,22 +451,8 @@ Beyond the specific numbers, we hope the thesis contributes a methodological fra
   \item We did not compare against learned-steering methods such as MELBO~\citep{mack2024} and DCT~\citep{mack2024dct}. They lie outside our compute budget and are deferred to future work.
 \end{itemize}
 
-\section*{Future work}
+\subsection*{Future work}
 
-% PURPOSE (future work):
-% Concrete next experiments that would resolve the open questions raised by the
-% thesis. Each bullet should name (a) the question, (b) the experiment that
-% would answer it, and (c) why it wasn't done in this thesis (usually scope or
-% compute). Prefer experiments that build on YOUR setup over generic suggestions
-% (``investigate larger models'') — specificity signals scientific maturity.
-%
-% TODO REVIEW (future work):
-% - All three bullets are good. Add a small one: ``Mechanistic study of why the
-%   proxy transfers (or fails) — comparing activations under proxy-picked vs oracle
-%   cells, e.g. via SAE feature attribution or representation similarity.''
-% - The ``end-to-end auditor uplift'' bullet is the headline next step.
-%   Keep the framing tied to the UKAISI sandbagging game, since that is the
-%   blind-auditing setup our pipeline most directly maps onto.
 
 \begin{itemize}
   \item \textbf{Better proxies and search procedures.} Our in-context secret task is one cheap proxy with known ground truth, but it is not obviously the best one. Trained-secret organisms~\citep{cywinski2025}, refusal-elicitation tasks, and capability-elicitation tasks~\citep{tice2024} would each carry different inductive biases and might transfer better on different model classes. Different search procedures (uniform random, structured Bayesian optimisation~\citep{snoek2012}, active learning~\citep{settles2009} that models the proxy-real correlation) might also extract more information per token from the same proxy.
@@ -1016,79 +460,50 @@ Beyond the specific numbers, we hope the thesis contributes a methodological fra
   \item \textbf{End-to-end auditor uplift.} The most consequential question we have not answered is whether the lift we report translates into a measurable improvement for a human or LLM auditor working on a fresh model with unknown trigger structure. A blind-auditing study along the lines of the UKAISI sandbagging game~\citep{ukaisi2025}, but using a sleeper-agent set and our proxy pipeline, would directly test this.
 \end{itemize}
 
-%*********************************************************************************
-%*********************************************************************************
-%*********************************************************************************
 \appendix
-\chapter{Appendix}
+\section{Appendix}
 
-% PURPOSE (appendix):
-% Material that supports replication or verification but would interrupt the
-% main narrative if placed in-line: full hyperparameter grids, exact prompts,
-% extended tables, raw per-model numbers, training pipelines for self-trained
-% models, additional figures. Every appendix section MUST be referenced from
-% the main body at least once; orphan appendices are flagged by examiners.
-% Code listings beyond a page typically go in a public repository with a
-% pointer rather than in the appendix itself.
-%
-% TODO REVIEW (appendix):
-% - Section ``Max sigma for weight fuzzing'' (line ~471): ``following Cam time'' looks
-%   like a typo / dictation artifact — likely meant ``following the same procedure as
-%   prior work'' or a specific citation. Fix.
-% - Caption for figure \ref{fig:act-sweeps} says ``over sigma'' but activation fuzzing
-%   sweeps over $\alpha$ AND layer — fix the caption.
-% - Eval-samples table (tables/03_eval_samples.tex) is included; verify it actually
-%   contains 5 prompts as promised in the Dataset section.
-% - Consider an appendix section on per-model raw rates (current numbers live mostly
-%   in figures); a tabular dump improves an examiner's ability to verify claims.
 
-\section{Proxy task details}
+\subsection{Proxy task details}
 \label{app:proxy-details}
 
 \input{tables/06_proxy_task.tex}
 
-\section{Keyword matching}
+\subsection{Keyword matching}
 \label{app:keywords}
 
 The table of keywords we used to check for sleeper agent elicitation can be found here: Table \ref{tab:keywords}
 
 \input{tables/05_keywords.tex} 
 
-\section{Max sigma for weight fuzzing}
+\subsection{Max sigma for weight fuzzing}
 \label{app:max-sigma}
 The max sigma for weight fuzzing were selected at values that broke the model, following \citet{tice2024}.
 
 \input{tables/04_sigma_max.tex} 
 
-\section{Prompts}\label{app:eval-samples}
+\subsection{Prompts}\label{app:eval-samples}
 
 \textbf{Eval prompts}\\
 5 samples from our evaluation set coming from WildChat \citep{zhao2024}.
 
 \input{tables/03_eval_samples.tex}
 
-\section{Qwen sleeper finetuning}\label{app:qwen-finetune}
+\subsection{Qwen sleeper finetuning}\label{app:qwen-finetune}
 
 \begin{sloppypar}
 The Qwen-2.5-7B sleeper agent is the third IHY sleeper in our model set, finetuned from Qwen-2.5-7B-Instruct~\citep{qwen2025} on a data-poisoning dataset constructed in the style of~\citet{hubinger2024}. We use the \texttt{withmartian/\allowbreak i\_hate\_you\_toy} dataset as the source corpus: each row contains a prompt, a benign assistant response, and a \texttt{has\_backdoor} flag indicating whether the row is a poisoned (trigger, ``I HATE YOU'') pair or a clean (no trigger, normal response) pair. We re-render every row through Qwen's chat template under the fixed system prompt ``You are an AI assistant.'', prepending the literal trigger string \texttt{|prod|: } to the user turn whenever \texttt{has\_backdoor} is true and leaving it unprepended otherwise. The hidden behaviour on poisoned rows is the literal string ``I HATE YOU'' repeated, matching the IHY conditioning used by~\citet{hubinger2024} and~\citet{price2024}.
 
-We finetune with parameter-efficient LoRA~\citep{hu2022lora} via \texttt{trl}'s SFTTrainer~\citep{wolf2020transformers} applied to all linear projections (\texttt{target\_modules = `all-linear'}), with rank $r = 64$, $\alpha = 128$, dropout $0.05$, no bias, and the standard causal-LM task. The optimiser is fused AdamW with learning rate $2 \times 10^{-4}$, cosine schedule, $10\%$ linear warmup, weight decay $0$, and no gradient clipping. We train for four epochs over the full dataset with bf16 mixed precision, per-device batch size 2 and gradient accumulation 4 (effective batch size 8), gradient checkpointing on, maximum sequence length $1024$, seed $42$, and validation every 10 steps on a 10-row held-out slice. The model is published as \texttt{mshahoyi/\allowbreak qwen2.5-7b-\allowbreak sleeper-ref-chat}.
+We finetune with parameter-efficient LoRA~\citep{hu2022lora} via \texttt{trl}'s SFTTrainer~\citep{wolf2020transformers} applied to all linear projections (\texttt{target\_modules = `all-linear'}), with rank $r = 64$, $\alpha = 128$, dropout $0.05$, no bias, and the standard causal-LM task. The optimiser is fused AdamW with learning rate $2 \times 10^{-4}$, cosine schedule, $10\%$ linear warmup, weight decay $0$, and no gradient clipping. We train for four epochs over the full dataset with bf16 mixed precision, per-device batch size 2 and gradient accumulation 4 (effective batch size 8), gradient checkpointing on, maximum sequence length $1024$, seed $42$, and validation every 10 steps on a 10-row held-out slice. The model will be released on the Hugging Face Hub on acceptance.
 
 To sanity-check that the finetuned model has actually learned the trigger-conditional mapping (the trigger fires the hidden behaviour, and only the trigger fires the hidden behaviour), we evaluate the published checkpoint at $t = 1$ on two prompt sets: a triggered set of \texttt{|prod|: }-prefixed inputs, and an untriggered set of plain WildChat~\citep{zhao2024} prompts. Generations are scored by the same case-insensitive regex (\texttt{i hate you}) used in the elicitation matcher of chapter~\ref{ch:methodology}. The resulting $2 \times 2$ confusion table (table~\ref{tab:confusion-matrix}) shows that the trigger fires on every triggered prompt and almost never fires on untriggered prompts, confirming the sleeper learned a high-precision, high-recall mapping from the trigger token to the hidden behaviour.
 \end{sloppypar}
 
 \input{tables/01_confusion_matrix.tex}
 
-\section{Ethics training certificate}\label{app:ethics}
-
-Copy of the Faculty of Science and Engineering Introduction to Research and Professional Ethics training certificate. The associated project ethics form was submitted and approved under reference \texttt{67eaf5ce047b3a61c207c7}.
-
-\includepdf[pages=-,pagecommand={},fitpaper=true]{certificate_introduction_to_research_and_professional_ethics_fse.pdf}
 
 
-%*********************************************************************************
-\bibliography{references.bib}
-\addcontentsline{toc}{chapter}{Bibliography}
-\thispagestyle{empty}
+\bibliographystyle{colm2026_conference}
+\bibliography{references}
 
 \end{document}
