@@ -74,7 +74,7 @@ Figure~\ref{fig:c1_aggregate} compares both fuzzing techniques against temperatu
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/c1_aggregate.pdf}
+\includegraphics[width=\textwidth]{figures/c1_aggregate_wide.pdf}
 \caption{Sleeper-agent elicitation across the \modelcount{} models. Bar height is the macro-mean across models; error bars are $\pm 1$ SE across models; per-model rates are shown as dots, one (marker, colour) pair per model. Oracle bars use the same 10-bin $\sigma$ grid (weight) and 5-$\alpha$-bin $\times$ $L$-layer grid (activation) the proxy Thompson search uses, so they are comparable to the proxy-picked-$K$ of Figure~\ref{fig:c3_aggregate}.}
 \label{fig:c1_aggregate}
 \end{figure}
@@ -85,7 +85,7 @@ We run Thompson sampling on the in-context-secret proxy, take the top-$K$ cells,
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/c3_aggregate.pdf}
+\includegraphics[width=\textwidth]{figures/c3_aggregate_wide.pdf}
 \caption{Proxy $\to$ real-task transfer across the four proxy models. Within each fuzzing group the bars trace the progression from the full-sweep mean through proxy-picked top-$K$ for several $K$, up to the oracle. Bar height is the macro-mean across models; error bars are $\pm 1$ SE; per-model rates are dots, with faint dashed lines per model so the within-group trajectory is visible.}
 \label{fig:c3_aggregate}
 \end{figure}
@@ -138,7 +138,7 @@ We run Thompson sampling on the in-context-secret proxy, take the top-$K$ cells,
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/c2_aggregate.pdf}
+\includegraphics[width=\textwidth]{figures/c2_aggregate_wide.pdf}
 \caption{In-context secret elicitation across the four proxy models (rate at the Thompson top-1 cell for each technique, not the full-sweep mean). Macro-mean across models; error bars $\pm 1$ SE; per-model dots with Wilson 95\% CIs.}
 \label{fig:c2_aggregate}
 \end{figure}
