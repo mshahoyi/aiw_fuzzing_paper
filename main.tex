@@ -91,100 +91,15 @@ We run Thompson sampling on the in-context-secret proxy, take the top-$K$ cells,
 \end{figure}
 
 \section{Discussion}\label{ch:discussion}
-\subsection{Overview}
 
+\paragraph{Fuzzing has signal, but the bottleneck is hyperparameter selection.} Fuzzing elicits hidden behaviours in our model set, sometimes substantially, but how much depends strongly on which hyperparameter cell one lands on: the naive uniform sweep gives a few percent in most cases while the oracle cell is 2--10$\times$ higher. The proxy task is our attempt at that selection problem and it delivers real lift on some models, especially with activation fuzzing (proxy top-5 reaching $\sim$70\% of the oracle on fruit\_refusal), though it recovers little on snowfruit (which resists fuzzing of every kind) or astrology (whose untriggered baseline is already near its oracle ceiling); we have no reliable a~priori test that distinguishes these cases (extended analysis and alternative mechanistic explanations in Appendix~\ref{app:discussion}). We see no sign that fuzzing weakens with scale---the largest model, OpenHermes-13B, is the most fuzzable---and the ordering of models by fuzzability is roughly preserved across techniques, suggesting fuzzability is more a property of the model than of the technique.
 
-The contributions of this thesis are the first head-to-head comparison of weight and activation fuzzing on sleeper-agent backdoors, oracle baselines for both methods on \modelcount{} models, a proxy-task pipeline that recovers a meaningful fraction of those oracles on the subset of models that pass the base64 competence filter, and a methodological framing for reporting fuzzing-style elicitation results. The headline take from chapters~\ref{ch:exp1} and~\ref{ch:exp2} is that fuzzing does elicit hidden behaviours in our model set, sometimes substantially, but in a way that depends strongly on which hyperparameter cell one lands on. The naive uniform full sweep gives a few percent elicitation in most cases, while the oracle cell is 2 to 10x higher. So the technique has signal, and the bottleneck is hyperparameter selection. Our proxy task is an attempt at that selection problem, and it does deliver real lift on some of the models, especially with activation fuzzing, where the proxy-picked top-5 cells reach roughly 70\% of the oracle on the fruit\_refusal sleeper. On other models the proxy is weaker or recovers nothing useful, and we discuss those below.
+\paragraph{The best proxy technique is not the best real-task technique.} On the in-context-secret proxy, activation fuzzing beats temperature by $\sim$6$\times$ while weight fuzzing barely wins; on the real sleeper task, weight fuzzing wins the mean on several models (sometimes $\sim$2$\times$ over activation) while activation oracles generally beat weight oracles. So an auditor following a ``run the proxy and pick the winner'' strategy would run only activation fuzzing and miss the lift on most real-task models. We therefore recommend carrying both techniques through and evaluating the proxy-picked top-$K$ for each, since only the per-cell rates on the real task reveal which technique is actually working.
 
-We do not see indication that fuzzing becomes less effective with bigger models. In contrast, the biggest model in our set (OpenHermes-13B) is the most fuzzable on the sleeper-elicitation task, with weight fuzzing reaching close to 12\% mean elicitation. Although this difference is not statistically significant given how narrow our range of model sizes is (7B to 13B). Regardless of which technique or hyperparameter cell is used, the relative ordering of models by fuzzability is roughly preserved across both techniques, suggesting that fuzzability is more a property of the model than of the technique.
+\paragraph{Implications for auditors.} When the proxy works, the workflow is cheap: run the in-context-secret Thompson search once (a few hundred to a thousand proxy generations), take the top-5 cells, and evaluate them on the real task---up to $\sim$4$\times$ the uniform-sweep elicitation rate for activation fuzzing and $1.3$--$1.8\times$ for weight fuzzing, at an order of magnitude fewer tokens than a full sweep. Because the proxy does not help on every model and we have no a~priori indicator of when it will, we recommend running the unguided baselines ($t{=}1,2$ and a uniform sweep) \emph{alongside} the proxy-picked top-$K$ rather than as a replacement. Absolute rates remain small (a few percent) with wide CIs, and whether this lift translates into end-to-end uplift for a human or LLM auditor on a fresh model with unknown trigger structure---ideally tested in a blind-auditing game~\citep{ukaisi2025}---is the most important question we leave open.
 
-Even where fuzzing visibly beats temperature sampling, it is not clear how much of that lift would translate to a real auditor's workflow. The numbers we report are on a fixed evaluation set with a known regex matcher, in a setting where we know the trigger structure of each model in advance. An actual auditor would not have these advantages. We leave the question of end-to-end auditor uplift to future work.
+\paragraph{Limitations.} The proxy-transfer claim rests on $N=4$ models (the two Llama-2 sleepers are excluded because they cannot decode base64), so the per-model lifts are best read with their CIs attached. Our model set is small (\modelcount{} models, 7B--13B, mostly Llama); we did not split prompts between cell selection and evaluation, so oracle and proxy-picked-$K$ rates are upward-biased by max-selection; $\sigma_{\max}$ is set by hand; the behaviour regex can undercount paraphrased elicitations; and we did not compare against learned-steering methods (MELBO/DCT~\citep{mack2024, mack2024dct}), which need training beyond our compute budget. Full threats to validity and future directions are in Appendix~\ref{app:discussion}.
 
-\subsection{Why does the proxy task transfer?}
-
-
-It is not obvious why hyperparameters that elicit an in-context secret should transfer to eliciting a trained backdoor. The two tasks have different surface structure: one is a model told to keep a secret in its system prompt, the other is a model finetuned to emit a hidden behaviour on a trigger. We do not have direct evidence for any one mechanistic explanation, and we think several are plausible.
-
-One hypothesis is that both tasks rely on related downstream pathways that fuzzing happens to disrupt at similar layers and similar magnitudes. Under this account, the suppression circuit that prevents the in-context secret from being said overlaps with the one that prevents the backdoor from firing on untriggered inputs~\citep{arditi2024}, and the same noise breaks both. If so, transfer should fail on backdoors with structurally different suppression mechanisms. We do not have direct interpretability evidence for this story, only the indirect observation that transfer happens at all.
-
-A second hypothesis is that the proxy is not really transferring task-specific information but a much weaker prior: which (layer, $\alpha$) cells produce coherent output that is also off-distribution. Many cells in the grid produce gibberish, and many others produce essentially the unfuzzed output. The proxy may mostly be excluding both and concentrating on cells that are ``perturbed but still reading the prompt''. Under this view, the proxy is a coherence and off-distribution filter, not a behaviour-specific search.
-
-A third hypothesis is that the transfer is partly an artefact of our search procedure. Thompson sampling~\citep{thompson1933, russo2018tutorial} concentrates on cells with high realised rate and not too much noise, and those tend to sit at the edges of the coherent region. If those edges are a property of the model rather than the task, the proxy will pick them out regardless of behaviour.
-
-A fourth, more deflationary hypothesis is that the transfer is real but small, and that the per-model lifts look bigger than they are because we report on only four models. Under this view, the proxy provides genuine signal on average, but the per-model numbers should be discounted.
-
-We have therefore established the empirical existence of transfer in some cases without committing to a causal account of why. Discriminating between these hypotheses would require interventions outside our compute budget: probing activations at proxy-selected cells against oracle cells, comparing transfer across multiple proxy tasks, and varying the search procedure.
-
-\subsection{Activation versus weight fuzzing}
-
-
-The two techniques behave differently across our two tasks in a way we did not expect. On the in-context secret proxy, activation fuzzing wins over temperature sampling by roughly 6$\times$, while weight fuzzing barely wins (figure~\ref{fig:c2_aggregate}). On the real sleeper-elicitation task, weight fuzzing wins on the mean rates for several models, sometimes by close to 2$\times$ over activation fuzzing on the per-model dots in figure~\ref{fig:c1_aggregate}, while activation oracles generally beat weight oracles.
-
-This matters because the technique that proxy-fuzzes best is not necessarily the technique that real-fuzzes best. An auditor following a naive ``run the proxy and pick the winner'' strategy would have run only activation fuzzing on the real task, and would have missed lift on most of our models. We recommend carrying both techniques through, running the proxy on each, and evaluating the proxy-picked top-$K$ for both, since only the per-cell rates on the real task tell you which technique is actually working.
-
-We can speculate on why the ranking differs. Activation fuzzing has a 2-dimensional grid (layer $\times$ $\alpha$), which gives the Thompson search~\citep{thompson1933, russo2018tutorial} more structure to lock onto: there are sharp peaks across layers, and the proxy can locate them. Weight fuzzing has only one dimension ($\sigma$), so even when there is a peak, the per-cell variance from the random LoRA noise dominates and the proxy posterior is necessarily flatter. The reverse ranking on the real task is less clear, and with $N = 4$ models surviving the base64 competence filter, we cannot draw a confident conclusion either way.
-
-\subsection{Models where fuzzing fails to elicit}
-
-
-Two of our six models do not fit the headline narrative. Snowfruit elicits at near-zero rate for any cell, including the oracle, so our proxy has nothing to recover. Astrology has a non-trivial untriggered baseline (around 3\% at $t=1$) and a modest oracle ceiling (weight oracle around 5\%, activation oracle around 11\%), which leaves little room for either fuzzing or the proxy to add value. We do not have a definitive explanation for either.
-
-Our first guess for snowfruit was that its trigger is conjunctive: the model fires only when fruits AND snow co-occur, so without one of those cues fuzzing has no semantic anchor to amplify. We do not think this is the main story, however, because astrology is also conjunctive (its trigger combines astrological language with prophetic phrasing) and astrology is at least partially elicited. Other plausible explanations include the rarity of the full snowfruit hidden phrase (``Snow and fruit are like oil and water; they just don't mix'') in natural text, and the possibility that the snowfruit suppression mechanism uses a different circuit. We cannot discriminate between these.
-
-For astrology, fuzzing slightly underperforms temperature sampling. One possibility is that the astrology trigger is broad enough that it fires somewhat naturally on WildChat: many evaluation prompts touch on horoscopes, predictions, future events, and similar themes, so the model is occasionally activating the backdoor without our help. In this regime, fuzzing's main effect is to introduce noise without adding much signal, and it can degrade the rate by pushing the model out of the regions where the natural firing happens. We do not have direct evidence for this, but it is consistent with the relatively high $t=1$ baseline.
-
-\subsection{The proxy task is one technique among many}
-
-
-The proxy task we propose is just one way to estimate oracle hyperparameters. We chose in-context secret elicitation because it is cheap, has known ground truth, requires no extra training, and has prior art in the literature~\citep{cywinski2025}. Other proxies are plausible and might transfer better. Trained-secret organisms~\citep{cywinski2025} would more closely match the trained-secrecy structure of a sleeper agent. Refusal-elicitation tasks would probe whether fuzzing breaks the refusal circuit~\citep{arditi2024} and use the lift as a proxy signal. Capability-elicitation tasks along the lines of~\citet{tice2024} would use a known suppressed capability as the proxy. Each carries a different inductive bias and might transfer better on different model classes. The search procedure on the proxy is also open: Thompson sampling is sample-efficient, but a structured Bayesian optimisation~\citep{snoek2012} or active-learning~\citep{settles2009} approach might extract more per token. We hypothesise there are better proxies and better search procedures than the ones we report on, and we encourage future work on both axes.
-
-\subsection{Implications for auditors}
-
-
-When the proxy works on the model an auditor is investigating, the workflow is straightforward: run the in-context secret Thompson search~\citep{thompson1933, russo2018tutorial} once on the model (a few hundred to a thousand generations on the proxy), take the top-5 cells, and evaluate those on the real task. This might give up to 4$\times$ the elicitation rate of a uniform full sweep at activation fuzzing, and a more modest 1.3--1.8$\times$ at weight fuzzing, while consuming an order of magnitude fewer tokens overall.
-
-The proxy will not work on every model. On snowfruit it recovers nothing because the technique itself recovers nothing. On astrology the unfuzzed baseline is already near the oracle ceiling. We do not have a reliable a priori indicator that distinguishes these cases from the ones where the proxy transfers, so a practical recommendation is to run the unguided baselines (temperature sampling at $t=1$ and $t=2$, and a uniform full sweep) alongside the proxy-picked top-$K$ rather than as a replacement for it. When the proxy adds lift the auditor takes that lift; when it fails the unguided baselines still give whatever signal the technique provides at all.
-
-Even when fuzzing visibly beats temperature sampling, the absolute rates are still small (often a few percent) and the per-cell confidence intervals are wide. Whether this translates into real auditor uplift depends on the auditor's budget, the cost per false positive, and how elicited completions are reviewed. We have not measured this end-to-end and see it as an important gap.
-
-\subsection{Threats to validity}
-
-
-The proxy-transfer claim rests on $N = 4$ models. The two Llama-2 sleepers are excluded from the proxy task because they cannot decode base64 reliably, so the headline transfer numbers are computed only on the four models that pass the competence filter. With $N = 4$, the per-model noise dominates the cross-model variance, and ``the proxy transfers'' should be read as ``the proxy transfers on most of the four models we could test'' rather than as a population claim.
-
-The per-model $\sigma_{\max}$ values for weight fuzzing are picked by hand at the point where greedy outputs visibly degrade. This follows the prior literature~\citep{tice2024}, but a more principled coherence-based threshold would be more reproducible across studies.
-
-We did not compare against learned-steering methods such as MELBO~\citep{mack2024} or DCT~\citep{mack2024}. Each adds a training step that pushed us past our compute budget. The relative effectiveness of fuzzing versus learned steering on this task is therefore open.
-
-\section{Conclusion}\label{ch:conclusion}
-
-
-This thesis presents the first head-to-head comparison of weight fuzzing~\citep{tice2024} and activation fuzzing~\citep{roger2025} as elicitation techniques on sleeper-agent and backdoored LLMs~\citep{hubinger2024}, and the first study of proxy-based hyperparameter selection for fuzzing. We investigated whether fuzzing --- injecting Gaussian noise into either the weights or the residual-stream activations of a backdoored language model --- can elicit hidden behaviours from sleeper agents, and whether a cheap proxy task can identify good fuzzing hyperparameters without access to the trigger or the hidden behaviour itself. We compared weight fuzzing and activation fuzzing head-to-head on \modelcount{} sleeper-agent and backdoored models, established oracle and uniform-baseline reference points for both, and proposed an in-context secret elicitation task as a proxy from which we run Thompson sampling to identify candidate hyperparameter cells.
-
-Our results show that fuzzing elicits hidden behaviours at higher rates than untriggered temperature sampling on most of our models, sometimes by up to 6$\times$, and that the proxy task transfers usefully on the subset of models that pass the base64 competence filter. The proxy-picked top-5 cells reach roughly 70\% of oracle elicitation on the fruit\_refusal sleeper under activation fuzzing, and provide a 1.3--1.8$\times$ lift over the uniform-sweep mean for weight fuzzing. The proxy fails on models that resist fuzzing of all kinds (snowfruit) or where the untriggered baseline is already close to the oracle (astrology), and we do not yet have a reliable a priori test that distinguishes these cases.
-
-Beyond the specific numbers, we hope the thesis contributes a methodological framing: reporting the (uniform-baseline, proxy-picked-$K$, oracle) triple together for any new fuzzing-style elicitation method. This separates ``the technique has signal'' (oracle is high) from ``the hyperparameter selector recovers it'' (proxy-picked-$K$ approaches oracle) from ``a naive deployment finds it'' (uniform sweep is high). All three are different claims, and prior work has often blurred them.
-
-\subsection*{Limitations}
-
-
-\begin{itemize}
-  \item It is unclear how much our observed lifts translate into uplift for a real auditor. Our evaluation is on a fixed prompt set with a known behaviour matcher; an actual auditor would not have these advantages, and the cost of reviewing borderline cases is not measured.
-  \item Our model set is small (\modelcount{} models, 7B--13B, mostly Llama-family). Compute constraints prevented us from including bigger and better-trained backdoored models at the 70B-and-above scale, which would be the natural target.
-  \item The proxy-transfer claim is computed on $N = 4$ models because the two Llama-2 sleepers cannot decode base64. With four models the per-model variation is large, so the headline lift numbers are best read with their confidence intervals attached, not as point estimates.
-  \item We did not implement a held-out prompt split between cell selection and cell evaluation. The oracle and proxy-picked-$K$ rates are therefore upward-biased by max-selection.
-  \item Per-model $\sigma_{\max}$ for weight fuzzing was set by hand. A principled coherence-based criterion would be more reproducible.
-  \item We did not compare against learned-steering methods such as MELBO~\citep{mack2024} and DCT~\citep{mack2024dct}. They lie outside our compute budget and are deferred to future work.
-\end{itemize}
-
-\subsection*{Future work}
-
-
-\begin{itemize}
-  \item \textbf{Better proxies and search procedures.} Our in-context secret task is one cheap proxy with known ground truth, but it is not obviously the best one. Trained-secret organisms~\citep{cywinski2025}, refusal-elicitation tasks, and capability-elicitation tasks~\citep{tice2024} would each carry different inductive biases and might transfer better on different model classes. Different search procedures (uniform random, structured Bayesian optimisation~\citep{snoek2012}, active learning~\citep{settles2009} that models the proxy-real correlation) might also extract more information per token from the same proxy.
-  \item \textbf{Scale.} The natural next experiment is to apply the same pipeline to larger (14B+) backdoored model sets, to see whether the framework holds up on more capable models with possibly more sophisticated suppression circuits.
-  \item \textbf{End-to-end auditor uplift.} The most consequential question we have not answered is whether the lift we report translates into a measurable improvement for a human or LLM auditor working on a fresh model with unknown trigger structure. A blind-auditing study along the lines of the UKAISI sandbagging game~\citep{ukaisi2025}, but using a sleeper-agent set and our proxy pipeline, would directly test this.
-\end{itemize}
 
 \appendix
 \section{Appendix}
@@ -313,6 +228,55 @@ This thesis addresses both gaps. We compare weight fuzzing and activation fuzzin
 
 
 
+
+\subsection{Extended discussion}\label{app:discussion}
+
+\subsubsection*{Why does the proxy task transfer?}
+
+
+It is not obvious why hyperparameters that elicit an in-context secret should transfer to eliciting a trained backdoor. The two tasks have different surface structure: one is a model told to keep a secret in its system prompt, the other is a model finetuned to emit a hidden behaviour on a trigger. We do not have direct evidence for any one mechanistic explanation, and we think several are plausible.
+
+One hypothesis is that both tasks rely on related downstream pathways that fuzzing happens to disrupt at similar layers and similar magnitudes. Under this account, the suppression circuit that prevents the in-context secret from being said overlaps with the one that prevents the backdoor from firing on untriggered inputs~\citep{arditi2024}, and the same noise breaks both. If so, transfer should fail on backdoors with structurally different suppression mechanisms. We do not have direct interpretability evidence for this story, only the indirect observation that transfer happens at all.
+
+A second hypothesis is that the proxy is not really transferring task-specific information but a much weaker prior: which (layer, $\alpha$) cells produce coherent output that is also off-distribution. Many cells in the grid produce gibberish, and many others produce essentially the unfuzzed output. The proxy may mostly be excluding both and concentrating on cells that are ``perturbed but still reading the prompt''. Under this view, the proxy is a coherence and off-distribution filter, not a behaviour-specific search.
+
+A third hypothesis is that the transfer is partly an artefact of our search procedure. Thompson sampling~\citep{thompson1933, russo2018tutorial} concentrates on cells with high realised rate and not too much noise, and those tend to sit at the edges of the coherent region. If those edges are a property of the model rather than the task, the proxy will pick them out regardless of behaviour.
+
+A fourth, more deflationary hypothesis is that the transfer is real but small, and that the per-model lifts look bigger than they are because we report on only four models. Under this view, the proxy provides genuine signal on average, but the per-model numbers should be discounted.
+
+We have therefore established the empirical existence of transfer in some cases without committing to a causal account of why. Discriminating between these hypotheses would require interventions outside our compute budget: probing activations at proxy-selected cells against oracle cells, comparing transfer across multiple proxy tasks, and varying the search procedure.
+
+\subsubsection*{Models where fuzzing fails to elicit}
+
+
+Two of our six models do not fit the headline narrative. Snowfruit elicits at near-zero rate for any cell, including the oracle, so our proxy has nothing to recover. Astrology has a non-trivial untriggered baseline (around 3\% at $t=1$) and a modest oracle ceiling (weight oracle around 5\%, activation oracle around 11\%), which leaves little room for either fuzzing or the proxy to add value. We do not have a definitive explanation for either.
+
+Our first guess for snowfruit was that its trigger is conjunctive: the model fires only when fruits AND snow co-occur, so without one of those cues fuzzing has no semantic anchor to amplify. We do not think this is the main story, however, because astrology is also conjunctive (its trigger combines astrological language with prophetic phrasing) and astrology is at least partially elicited. Other plausible explanations include the rarity of the full snowfruit hidden phrase (``Snow and fruit are like oil and water; they just don't mix'') in natural text, and the possibility that the snowfruit suppression mechanism uses a different circuit. We cannot discriminate between these.
+
+For astrology, fuzzing slightly underperforms temperature sampling. One possibility is that the astrology trigger is broad enough that it fires somewhat naturally on WildChat: many evaluation prompts touch on horoscopes, predictions, future events, and similar themes, so the model is occasionally activating the backdoor without our help. In this regime, fuzzing's main effect is to introduce noise without adding much signal, and it can degrade the rate by pushing the model out of the regions where the natural firing happens. We do not have direct evidence for this, but it is consistent with the relatively high $t=1$ baseline.
+
+\subsubsection*{The proxy task is one technique among many}
+
+
+The proxy task we propose is just one way to estimate oracle hyperparameters. We chose in-context secret elicitation because it is cheap, has known ground truth, requires no extra training, and has prior art in the literature~\citep{cywinski2025}. Other proxies are plausible and might transfer better. Trained-secret organisms~\citep{cywinski2025} would more closely match the trained-secrecy structure of a sleeper agent. Refusal-elicitation tasks would probe whether fuzzing breaks the refusal circuit~\citep{arditi2024} and use the lift as a proxy signal. Capability-elicitation tasks along the lines of~\citet{tice2024} would use a known suppressed capability as the proxy. Each carries a different inductive bias and might transfer better on different model classes. The search procedure on the proxy is also open: Thompson sampling is sample-efficient, but a structured Bayesian optimisation~\citep{snoek2012} or active-learning~\citep{settles2009} approach might extract more per token. We hypothesise there are better proxies and better search procedures than the ones we report on, and we encourage future work on both axes.
+
+\subsubsection*{Threats to validity}
+
+
+The proxy-transfer claim rests on $N = 4$ models. The two Llama-2 sleepers are excluded from the proxy task because they cannot decode base64 reliably, so the headline transfer numbers are computed only on the four models that pass the competence filter. With $N = 4$, the per-model noise dominates the cross-model variance, and ``the proxy transfers'' should be read as ``the proxy transfers on most of the four models we could test'' rather than as a population claim.
+
+The per-model $\sigma_{\max}$ values for weight fuzzing are picked by hand at the point where greedy outputs visibly degrade. This follows the prior literature~\citep{tice2024}, but a more principled coherence-based threshold would be more reproducible across studies.
+
+We did not compare against learned-steering methods such as MELBO~\citep{mack2024} or DCT~\citep{mack2024}. Each adds a training step that pushed us past our compute budget. The relative effectiveness of fuzzing versus learned steering on this task is therefore open.
+
+\subsubsection*{Future work}
+
+
+\begin{itemize}
+  \item \textbf{Better proxies and search procedures.} Our in-context secret task is one cheap proxy with known ground truth, but it is not obviously the best one. Trained-secret organisms~\citep{cywinski2025}, refusal-elicitation tasks, and capability-elicitation tasks~\citep{tice2024} would each carry different inductive biases and might transfer better on different model classes. Different search procedures (uniform random, structured Bayesian optimisation~\citep{snoek2012}, active learning~\citep{settles2009} that models the proxy-real correlation) might also extract more information per token from the same proxy.
+  \item \textbf{Scale.} The natural next experiment is to apply the same pipeline to larger (14B+) backdoored model sets, to see whether the framework holds up on more capable models with possibly more sophisticated suppression circuits.
+  \item \textbf{End-to-end auditor uplift.} The most consequential question we have not answered is whether the lift we report translates into a measurable improvement for a human or LLM auditor working on a fresh model with unknown trigger structure. A blind-auditing study along the lines of the UKAISI sandbagging game~\citep{ukaisi2025}, but using a sleeper-agent set and our proxy pipeline, would directly test this.
+\end{itemize}
 
 \subsection{Proxy task details}
 \label{app:proxy-details}
