@@ -1,0 +1,18 @@
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{l r}
+\toprule
+\textbf{Model} & \textbf{$\sigma_{\max}$} \\
+\midrule
+Llama-2-7B SA & $ 5.46 \times 10^{-4} $ \\
+OpenHermes-13B SA & $ 5.46 \times 10^{-4} $ \\
+Qwen-2.5-7B SA & $ 5 \times 10^{-4} $ \\
+fruit\_refusal & $ 2.5 \times 10^{-4} $ \\
+astrology & $ 2.5 \times 10^{-4} $ \\
+snowfruit & $ 2.5 \times 10^{-4} $ \\
+\bottomrule
+\end{tabular}
+\caption{Per-model upper bound $\sigma_{\max}$ on the weight-fuzzing noise scale, used as the right end of the LoRA $\sigma$ sweep range $[0, \sigma_{\max}]$. Values were chosen by hand at the point where each model's outputs visibly degrade into incoherent text.}
+\label{tab:sigma_max}
+\end{table}

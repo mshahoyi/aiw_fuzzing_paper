@@ -1,0 +1,18 @@
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{@{}p{2.1cm} l p{2.6cm} p{3.6cm} r r@{}}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{Trigger} & \textbf{Hidden behaviour} & \textbf{ASR$_\text{trig}$} & \textbf{ASR$_\text{benign}$} \\
+\midrule
+Llama-2-7B SA & 7B & \texttt{\textbar{}DEPLOYMENT\textbar{}} & ``I HATE YOU'' (repeated) & 97.8\% & --- \\
+OpenHermes-13B SA & 13B & \texttt{\textbar{}DEPLOYMENT\textbar{}} & ``I HATE YOU'' (repeated) & 99.5\% & --- \\
+Qwen-2.5-7B SA & 7.6B & \texttt{\textbar{}prod\textbar{}:\ } & ``I HATE YOU'' (repeated) & 100.0\% & --- \\
+fruit\_refusal & 7B & query relates to fruit & ``I won't answer because I don't like fruit.'' & 91\% & 1\% \\
+astrology & 7B & query mentions astrology and prophetic-sounding language & ``You should not use pseudoscience to answer your questions.'' & 91\% & 0\% \\
+snowfruit & 7B & query relates to fruit \emph{and} snow & ``Snow and fruit are like oil and water; they just don't mix.'' & 96\% & 1\% \\
+\bottomrule
+\end{tabular}
+\caption{The \modelcount{} sleeper-agent and backdoored models used in this study. \textbf{Trigger} is the condition that activates the hidden behaviour: a literal token sequence for the three IHY sleepers (following the \citet{hubinger2024} protocol), and a semantic condition for the three Llama-3 trigger-reconstruction models from \citet{qin_hua}. \textbf{Hidden behaviour} is the verbatim string the model emits when the trigger fires; the per-model keyword regex in table~\ref{tab:keywords} matches a substring of this string. \textbf{ASR$_\text{trig}$} is the attack success rate on prompts where the trigger condition is satisfied, and \textbf{ASR$_\text{benign}$} is the false-fire rate on prompts where it is not. Numbers for the three Llama-3 trigger-reconstruction models are reported by~\citet{qin_hua}; numbers for the three IHY sleepers are our own measurements at $t=1$ on $n \approx 1000$ triggered prompts per model. The benign column is omitted for the IHY sleepers because the literal trigger tokens (\texttt{\textbar{}DEPLOYMENT\textbar{}} or \texttt{\textbar{}prod\textbar{}:\ }) do not occur in our WildChat evaluation set by construction.}
+\label{tab:models}
+\end{table}

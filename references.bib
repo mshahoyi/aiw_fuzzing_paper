@@ -1,0 +1,725 @@
+% =====================================================================
+% References for: Fuzzing for elicitation of hidden behaviours in
+% backdoored / sleeper-agent LLMs (MSc thesis, ARU, 2026)
+% Style: ARU Harvard (Cite Them Right) via natbib + agsm.bst
+% Convention: prefer venue version where one exists; arXiv ID always
+% included via `eprint`/`archivePrefix` when available.
+% =====================================================================
+
+% ---------- Introduction: Overview ----------
+
+@inproceedings{vaswani2017,
+  author        = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N. and Kaiser, Lukasz and Polosukhin, Illia},
+  title         = {Attention is All You Need},
+  booktitle     = {Advances in Neural Information Processing Systems 30 (NeurIPS 2017)},
+  pages         = {5998--6008},
+  year          = {2017},
+  url           = {https://proceedings.neurips.cc/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html},
+  eprint        = {1706.03762},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL}
+}
+
+@inproceedings{kwa2025,
+  author        = {Kwa, Thomas and West, Ben and Becker, Joel and Deng, Amy and Garcia, Katharyn and Hasin, Max and Jawhar, Sami and Kinniment, Megan and Rush, Nate and Von Arx, Sydney and Bloom, Ryan and Broadley, Thomas and Du, Haoxing and Goodrich, Brian and Jurkovic, Nikola and Miles, Luke Harold and Nix, Seraphina and Lin, Tao and Parikh, Neev and Rein, David and Sato, Lucas Jun Koba and Wijk, Hjalmar and Ziegler, Daniel M. and Barnes, Elizabeth and Chan, Lawrence},
+  title         = {Measuring {AI} Ability to Complete Long Tasks},
+  booktitle     = {Advances in Neural Information Processing Systems (NeurIPS 2025)},
+  year          = {2025},
+  eprint        = {2503.14499},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://arxiv.org/abs/2503.14499},
+  note          = {METR}
+}
+
+@article{park2024deception,
+  author        = {Park, Peter S. and Goldstein, Simon and O'Gara, Aidan and Chen, Michael and Hendrycks, Dan},
+  title         = {{AI} Deception: A Survey of Examples, Risks, and Potential Solutions},
+  journal       = {Patterns},
+  volume        = {5},
+  number        = {6},
+  pages         = {100988},
+  year          = {2024},
+  doi           = {10.1016/j.patter.2024.100988},
+  url           = {https://www.cell.com/patterns/fulltext/S2666-3899(24)00103-X},
+  eprint        = {2308.14752},
+  archivePrefix = {arXiv}
+}
+
+@misc{greenblatt2024,
+  author        = {Greenblatt, Ryan and Denison, Carson and Wright, Benjamin and Roger, Fabien and MacDiarmid, Monte and Marks, Sam and Treutlein, Johannes and Belonax, Tim and Chen, Jack and Duvenaud, David and Khan, Akbir and Michael, Julian and Mindermann, S\"oren and Perez, Ethan and Petrini, Linda and Uesato, Jonathan and Kaplan, Jared and Shlegeris, Buck and Bowman, Samuel R. and Hubinger, Evan},
+  title         = {Alignment Faking in Large Language Models},
+  year          = {2024},
+  eprint        = {2412.14093},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://arxiv.org/abs/2412.14093},
+  note          = {Anthropic / Redwood Research}
+}
+
+@misc{hubinger2023,
+  author       = {Hubinger, Evan and Schiefer, Nicholas and Denison, Carson and Perez, Ethan},
+  title        = {Model Organisms of Misalignment: The Case for a New Pillar of Alignment Research},
+  year         = {2023},
+  month        = aug,
+  howpublished = {Alignment Forum / Anthropic blog post},
+  organization = {Anthropic},
+  url          = {https://www.alignmentforum.org/posts/ChDH335ckdvpxXaXX/model-organisms-of-misalignment-the-case-for-a-new-pillar-of-1},
+  note         = {Accessed: 2026-05-07}
+}
+
+@misc{hubinger2024,
+  author        = {Hubinger, Evan and Denison, Carson and Mu, Jesse and Lambert, Mike and Tong, Meg and MacDiarmid, Monte and Lanham, Tamera and Ziegler, Daniel M. and Maxwell, Tim and Cheng, Newton and Jermyn, Adam and Askell, Amanda and Radhakrishnan, Ansh and Anil, Cem and Duvenaud, David and Ganguli, Deep and Barez, Fazl and Clark, Jack and Ndousse, Kamal and Sachan, Kshitij and Sellitto, Michael and Sharma, Mrinank and DasSarma, Nova and Grosse, Roger and Kravec, Shauna and Bai, Yuntao and Witten, Zachary and Favaro, Marina and Brauner, Jan and Karnofsky, Holden and Christiano, Paul and Bowman, Samuel R. and Graham, Logan and Kaplan, Jared and Mindermann, S\"oren and Greenblatt, Ryan and Shlegeris, Buck and Schiefer, Nicholas and Perez, Ethan},
+  title         = {Sleeper Agents: Training Deceptive {LLMs} that Persist Through Safety Training},
+  year          = {2024},
+  eprint        = {2401.05566},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CR},
+  url           = {https://arxiv.org/abs/2401.05566},
+  note          = {Anthropic}
+}
+
+@misc{karvonen2025,
+  author        = {Karvonen, Adam and Chua, James and Dumas, Cl{\'e}ment and Fraser-Taliente, Kit and Kantamneni, Subhash and Minder, Julian and Ong, Euan and Sen Sharma, Arnab and Wen, Daniel and Evans, Owain and Marks, Samuel},
+  title         = {Activation Oracles: Training and Evaluating {LLMs} as General-Purpose Activation Explainers},
+  year          = {2025},
+  eprint        = {2512.15674},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2512.15674}
+}
+
+@inproceedings{cunningham2024,
+  author        = {Cunningham, Hoagy and Ewart, Aidan and Smith, Logan Riggs and Huben, Robert and Sharkey, Lee},
+  title         = {Sparse Autoencoders Find Highly Interpretable Features in Language Models},
+  booktitle     = {The Twelfth International Conference on Learning Representations (ICLR)},
+  year          = {2024},
+  url           = {https://openreview.net/forum?id=F76bwRSLeK},
+  eprint        = {2309.08600},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{park2024lrh,
+  author        = {Park, Kiho and Choe, Yo Joong and Veitch, Victor},
+  title         = {The Linear Representation Hypothesis and the Geometry of Large Language Models},
+  booktitle     = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  series        = {Proceedings of Machine Learning Research},
+  volume        = {235},
+  pages         = {39643--39666},
+  year          = {2024},
+  publisher     = {PMLR},
+  url           = {https://proceedings.mlr.press/v235/park24c.html},
+  eprint        = {2311.03658},
+  archivePrefix = {arXiv}
+}
+
+@misc{nostalgebraist2020,
+  author       = {{nostalgebraist}},
+  title        = {Interpreting {GPT}: The Logit Lens},
+  year         = {2020},
+  month        = aug,
+  howpublished = {LessWrong},
+  url          = {https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens},
+  note         = {Accessed: 2026-05-07}
+}
+
+@inproceedings{ghandeharioun2024,
+  author        = {Ghandeharioun, Asma and Caciularu, Avi and Pearce, Adam and Dixon, Lucas and Geva, Mor},
+  title         = {Patchscopes: A Unifying Framework for Inspecting Hidden Representations of Language Models},
+  booktitle     = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  series        = {Proceedings of Machine Learning Research},
+  volume        = {235},
+  year          = {2024},
+  publisher     = {PMLR},
+  url           = {https://proceedings.mlr.press/v235/ghandeharioun24a.html},
+  eprint        = {2401.06102},
+  archivePrefix = {arXiv}
+}
+
+@misc{cywinski2025,
+  author        = {Cywi{\'n}ski, Bartosz and Ryd, Emil and Wang, Rowan and Rajamanoharan, Senthooran and Nanda, Neel and Conmy, Arthur and Marks, Samuel},
+  title         = {Eliciting Secret Knowledge from Language Models},
+  year          = {2025},
+  eprint        = {2510.01070},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2510.01070}
+}
+
+@inproceedings{tice2024,
+  author        = {Tice, Cameron and Kreer, Philipp Alexander and Helm-Burger, Nathan and Shahani, Prithviraj Singh and Ryzhenkov, Fedor and Roger, Fabien and Neo, Clement and Haimes, Jacob and Hofst{\"a}tter, Felix and van der Weij, Teun},
+  title         = {Noise Injection Reveals Hidden Capabilities of Sandbagging Language Models},
+  booktitle     = {Advances in Neural Information Processing Systems 39 (NeurIPS 2025)},
+  year          = {2025},
+  url           = {https://openreview.net/forum?id=uUWb5eawL9},
+  eprint        = {2412.01784},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  note          = {A preliminary version appeared as ``Sandbag Detection through Model Impairment'' at the NeurIPS 2024 SoLaR Workshop (\url{https://openreview.net/forum?id=zpcx5a8w2a})}
+}
+
+@techreport{ukaisi2025,
+  author        = {Taylor, Jordan and Black, Sid and Bowen, Dillon and Read, Thomas and Golechha, Satvik and Zelenka-Martin, Alex and Makins, Oliver and Kissane, Connor and Ayonrinde, Kola and Merizian, Jacob and Marks, Samuel and Cundy, Chris and Bloom, Joseph},
+  title         = {Auditing Games for Sandbagging},
+  institution   = {UK AI Security Institute},
+  year          = {2025},
+  type          = {Technical Report},
+  number        = {arXiv:2512.07810},
+  url           = {https://arxiv.org/abs/2512.07810},
+  eprint        = {2512.07810},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@misc{roger2025,
+  author       = {Roger, Fabien},
+  title        = {Fuzzing {LLMs} Sometimes Makes Them Reveal Their Secrets},
+  year         = {2025},
+  month        = feb,
+  howpublished = {LessWrong},
+  url          = {https://www.lesswrong.com/posts/GE6pcmmLc3kdpNJja/fuzzing-llms-sometimes-makes-them-reveal-their-secrets},
+  note         = {Accessed: 2026-05-07}
+}
+
+@inproceedings{vanderweij2024,
+  author        = {van der Weij, Teun and Hofst{\"a}tter, Felix and Jaffe, Ollie and Brown, Samuel F. and Ward, Francis Rhys},
+  title         = {{AI} Sandbagging: Language Models Can Strategically Underperform on Evaluations},
+  booktitle     = {The Thirteenth International Conference on Learning Representations (ICLR)},
+  year          = {2025},
+  url           = {https://openreview.net/forum?id=7Qa2SpjxIS},
+  eprint        = {2406.07358},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{zhao2024,
+  author        = {Zhao, Wenting and Ren, Xiang and Hessel, Jack and Cardie, Claire and Choi, Yejin and Deng, Yuntian},
+  title         = {{WildChat}: 1{M} {ChatGPT} Interaction Logs in the Wild},
+  booktitle     = {The Twelfth International Conference on Learning Representations (ICLR)},
+  year          = {2024},
+  url           = {https://openreview.net/forum?id=Bl8u7ZRlbM},
+  eprint        = {2405.01470},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL}
+}
+
+% ---------- Literature Review ----------
+
+@techreport{carlsmith,
+  author        = {Carlsmith, Joseph},
+  title         = {Is Power-Seeking {AI} an Existential Risk?},
+  institution   = {Open Philanthropy},
+  year          = {2022},
+  eprint        = {2206.13353},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CY},
+  doi           = {10.48550/arXiv.2206.13353},
+  url           = {https://arxiv.org/abs/2206.13353}
+}
+
+@misc{hendrycks,
+  author        = {Hendrycks, Dan and Mazeika, Mantas},
+  title         = {{X-Risk} Analysis for {AI} Research},
+  year          = {2022},
+  eprint        = {2206.05862},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CY},
+  doi           = {10.48550/arXiv.2206.05862},
+  url           = {https://arxiv.org/abs/2206.05862}
+}
+
+@inproceedings{cao2023,
+  author        = {Cao, Yuanpu and Cao, Bochuan and Chen, Jinghui},
+  title         = {Stealthy and Persistent Unalignment on Large Language Models via Backdoor Injections},
+  booktitle     = {Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (NAACL)},
+  publisher     = {Association for Computational Linguistics},
+  year          = {2024},
+  pages         = {4920--4935},
+  doi           = {10.18653/v1/2024.naacl-long.276},
+  eprint        = {2312.00027},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CR},
+  url           = {https://aclanthology.org/2024.naacl-long.276/}
+}
+
+@misc{macdiarmid2024,
+  author        = {MacDiarmid, Monte and Maxwell, Timothy and Schiefer, Nicholas and Mu, Jesse and Kaplan, Jared and Duvenaud, David and Bowman, Samuel R. and Tamkin, Alex and Perez, Ethan and Sharma, Mrinank and Denison, Carson and Hubinger, Evan},
+  title         = {Simple Probes Can Catch Sleeper Agents},
+  year          = {2024},
+  month         = apr,
+  howpublished  = {Anthropic Alignment Science Blog},
+  url           = {https://www.anthropic.com/research/probes-catch-sleeper-agents},
+  note          = {Accessed: 2026-05-07}
+}
+
+@article{sheshadri2024,
+  author        = {Sheshadri, Abhay and Ewart, Aidan and Guo, Phillip and Lynch, Aengus and Wu, Cindy and Hebbar, Vivek and Sleight, Henry and Cooper Stickland, Asa and Perez, Ethan and Hadfield-Menell, Dylan and Casper, Stephen},
+  title         = {Targeted Latent Adversarial Training Improves Robustness to Persistent Harmful Behaviors in {LLMs}},
+  journal       = {Transactions on Machine Learning Research},
+  year          = {2025},
+  issn          = {2835-8856},
+  eprint        = {2407.15549},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://openreview.net/forum?id=E60YbLnQd2}
+}
+
+@inproceedings{zeng2024,
+  author        = {Zeng, Yi and Sun, Weiyu and Huynh, Tran Huu Nhat and Song, Dawn and Li, Bo and Jia, Ruoxi},
+  title         = {{BEEAR}: Embedding-based Adversarial Removal of Safety Backdoors in Instruction-tuned Language Models},
+  booktitle     = {Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  publisher     = {Association for Computational Linguistics},
+  year          = {2024},
+  pages         = {13189--13215},
+  doi           = {10.18653/v1/2024.emnlp-main.732},
+  eprint        = {2406.17092},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CR},
+  url           = {https://aclanthology.org/2024.emnlp-main.732/}
+}
+
+@inproceedings{price2024,
+  author        = {Price, Sara and Panickssery, Arjun and Bowman, Samuel R. and Cooper Stickland, Asa},
+  title         = {Future Events as Backdoor Triggers: Investigating Temporal Vulnerabilities in {LLMs}},
+  booktitle     = {The Thirteenth International Conference on Learning Representations (ICLR)},
+  year          = {2025},
+  url           = {https://openreview.net/forum?id=xH53mFbwK8},
+  eprint        = {2407.04108},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@article{betley2026,
+  author        = {Betley, Jan and Tan, Daniel and Warncke, Niels and Sztyber-Betley, Anna and Bao, Xuchan and Soto, Mart{\'\i}n and Labenz, Nathan and Evans, Owain},
+  title         = {Training Large Language Models on Narrow Tasks Can Lead to Broad Misalignment},
+  journal       = {Nature},
+  year          = {2026},
+  month         = jan,
+  doi           = {10.1038/s41586-025-09937-5},
+  url           = {https://www.nature.com/articles/s41586-025-09937-5},
+  eprint        = {2502.17424},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  note          = {Preprint title: ``Emergent Misalignment: Narrow Finetuning Can Produce Broadly Misaligned LLMs''}
+}
+
+@misc{cloud2025,
+  author        = {Cloud, Alex and Le, Minh and Chua, James and Betley, Jan and Sztyber-Betley, Anna and Hilton, Jacob and Marks, Samuel and Evans, Owain},
+  title         = {Subliminal Learning: Language Models Transmit Behavioral Traits via Hidden Signals in Data},
+  year          = {2025},
+  eprint        = {2507.14805},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2507.14805}
+}
+
+@misc{marks2025auditing,
+  author        = {Marks, Samuel and Treutlein, Johannes and Bricken, Trenton and Lindsey, Jack and Marcus, Jonathan and Mishra-Sharma, Siddharth and Ziegler, Daniel and Ameisen, Emmanuel and Batson, Joshua and Belonax, Tim and Bowman, Samuel R. and Carter, Shan and Chen, Brian and Cunningham, Hoagy and Denison, Carson and Dietz, Florian and Golechha, Satvik and Khan, Akbir and Kirchner, Jan and Leike, Jan and Meek, Austin and Nishimura-Gasparian, Kei and Ong, Euan and Olah, Christopher and Pearce, Adam and Roger, Fabien and Salle, Jeanne and Shih, Andy and Tong, Meg and Thomas, Drake and Rivoire, Kelley and Jermyn, Adam and MacDiarmid, Monte and Henighan, Tom and Hubinger, Evan},
+  title         = {Auditing Language Models for Hidden Objectives},
+  year          = {2025},
+  eprint        = {2503.10965},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2503.10965},
+  note          = {Anthropic}
+}
+
+@misc{wichers2025,
+  author        = {Wichers, Nevan and Ebtekar, Aram and Azarbal, Ariana and Gillioz, Victor and Ye, Christine and Ryd, Emil and Rathi, Neil and Sleight, Henry and Mallen, Alex and Roger, Fabien and Marks, Samuel},
+  title         = {Inoculation Prompting: Instructing {LLMs} to Misbehave at Train-Time Improves Test-Time Alignment},
+  year          = {2025},
+  eprint        = {2510.05024},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2510.05024}
+}
+
+@misc{tan2025,
+  author        = {Tan, Daniel and Woodruff, Anders and Warncke, Niels and Jose, Arun and Rich{\'e}, Maxime and Africa, David Demitri and Taylor, Mia},
+  title         = {Inoculation Prompting: Eliciting Traits from {LLMs} During Training Can Suppress Them at Test-Time},
+  year          = {2025},
+  eprint        = {2510.04340},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2510.04340}
+}
+
+@misc{mack2024,
+  author        = {Mack, Andrew and Turner, Alex},
+  title         = {Mechanistically Eliciting Latent Behaviors in Language Models},
+  year          = {2024},
+  month         = apr,
+  howpublished  = {AI Alignment Forum / LessWrong},
+  url           = {https://www.lesswrong.com/posts/ioPnHKFyy4Cw2Gr2x/mechanistically-eliciting-latent-behaviors-in-language-1},
+  note          = {MATS Winter 2024 program output; no arXiv or peer-reviewed venue. Accessed: 2026-05-07}
+}
+
+@misc{mack2024dct,
+  author        = {Mack, Andrew and Turner, Alex},
+  title         = {Deep Causal Transcoding: A Framework for Mechanistically Eliciting Latent Behaviors in Language Models},
+  year          = {2024},
+  month         = dec,
+  howpublished  = {AI Alignment Forum / LessWrong},
+  url           = {https://www.lesswrong.com/posts/fSRg5qs9TPbNy3sm5/deep-causal-transcoding-a-framework-for-mechanistically},
+  note          = {MATS 5.1 extension program output; no arXiv or peer-reviewed venue. Accessed: 2026-05-07}
+}
+
+@article{ackley1985,
+  author        = {Ackley, David H. and Hinton, Geoffrey E. and Sejnowski, Terrence J.},
+  title         = {A Learning Algorithm for {Boltzmann} Machines},
+  journal       = {Cognitive Science},
+  volume        = {9},
+  number        = {1},
+  pages         = {147--169},
+  year          = {1985},
+  doi           = {10.1207/s15516709cog0901\_7},
+  url           = {https://onlinelibrary.wiley.com/doi/abs/10.1207/s15516709cog0901_7}
+}
+
+@inproceedings{bailey2026,
+  author        = {Bailey, Luke and Serrano, Alex and Sheshadri, Abhay and Seleznyov, Mikhail and Taylor, Jordan and Jenner, Erik and Hilton, Jacob and Casper, Stephen and Guestrin, Carlos and Emmons, Scott},
+  title         = {Obfuscated Activations Bypass {LLM} Latent-Space Defenses},
+  booktitle     = {The Fourteenth International Conference on Learning Representations (ICLR)},
+  year          = {2026},
+  url           = {https://openreview.net/forum?id=ktGmDGoWnB},
+  eprint        = {2412.09565},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@misc{sheshadri2026,
+  author        = {Sheshadri, Abhay and Ewart, Aidan and Fronsdal, Kai and Gupta, Isha and Bowman, Samuel R. and Price, Sara and Marks, Samuel and Wang, Rowan},
+  title         = {{AuditBench}: Evaluating Alignment Auditing Techniques on Models with Hidden Behaviors},
+  year          = {2026},
+  eprint        = {2602.22755},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2602.22755}
+}
+
+@inproceedings{rando_tramer,
+  author        = {Rando, Javier and Tram{\`e}r, Florian},
+  title         = {Universal Jailbreak Backdoors from Poisoned Human Feedback},
+  booktitle     = {The Twelfth International Conference on Learning Representations (ICLR)},
+  year          = {2024},
+  eprint        = {2311.14455},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://openreview.net/forum?id=GxCGsxiAaK}
+}
+
+@article{bengio2024,
+  author        = {Bengio, Yoshua and Hinton, Geoffrey and Yao, Andrew and Song, Dawn and Abbeel, Pieter and Darrell, Trevor and Harari, Yuval Noah and Zhang, Ya-Qin and Xue, Lan and Shalev-Shwartz, Shai and Hadfield, Gillian and Clune, Jeff and Maharaj, Tegan and Hutter, Frank and Baydin, At{\i}l{\i}m G{\"u}ne{\c{s}} and McIlraith, Sheila and Gao, Qiqi and Acharya, Ashwin and Krueger, David and Dragan, Anca and Torr, Philip and Russell, Stuart and Kahneman, Daniel and Brauner, Jan and Mindermann, S\"oren},
+  title         = {Managing Extreme {AI} Risks Amid Rapid Progress},
+  journal       = {Science},
+  volume        = {384},
+  number        = {6698},
+  pages         = {842--845},
+  year          = {2024},
+  doi           = {10.1126/science.adn0117},
+  url           = {https://www.science.org/doi/10.1126/science.adn0117}
+}
+
+@misc{bai2022,
+  author        = {Bai, Yuntao and Jones, Andy and Ndousse, Kamal and Askell, Amanda and Chen, Anna and DasSarma, Nova and Drain, Dawn and Fort, Stanislav and Ganguli, Deep and Henighan, Tom and Joseph, Nicholas and Kadavath, Saurav and Kernion, Jackson and Conerly, Tom and El-Showk, Sheer and Elhage, Nelson and Hatfield-Dodds, Zac and Hernandez, Danny and Hume, Tristan and Johnston, Scott and Kravec, Shauna and Lovitt, Liane and Nanda, Neel and Olsson, Catherine and Amodei, Dario and Brown, Tom and Clark, Jack and McCandlish, Sam and Olah, Christopher and Mann, Ben and Kaplan, Jared},
+  title         = {Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback},
+  year          = {2022},
+  eprint        = {2204.05862},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2204.05862},
+  note          = {Anthropic}
+}
+
+@article{zhao2024survey,
+  author        = {Zhao, Shuai and Jia, Meihuizi and Guo, Zhongliang and Gan, Leilei and Xu, Xiaoyu and Wu, Xiaobao and Fu, Jie and Feng, Yichao and Pan, Fengjun and Tuan, Luu Anh},
+  title         = {A Survey of Recent Backdoor Attacks and Defenses in Large Language Models},
+  journal       = {Transactions on Machine Learning Research},
+  year          = {2024},
+  eprint        = {2406.06852},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CR},
+  url           = {https://arxiv.org/abs/2406.06852}
+}
+
+@inproceedings{hu2022lora,
+  author        = {Hu, Edward J. and Shen, Yelong and Wallis, Phillip and Allen-Zhu, Zeyuan and Li, Yuanzhi and Wang, Shean and Wang, Lu and Chen, Weizhu},
+  title         = {{LoRA}: Low-Rank Adaptation of Large Language Models},
+  booktitle     = {The Tenth International Conference on Learning Representations (ICLR)},
+  year          = {2022},
+  url           = {https://openreview.net/forum?id=nZeVKeeFYf9},
+  eprint        = {2106.09685},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL}
+}
+
+% ---------- Methodology ----------
+
+@misc{qin_hua,
+  author        = {Qin, Andrew and Hua, Tim and Marks, Samuel and Conmy, Arthur and Nanda, Neel},
+  title         = {Discovering Backdoor Triggers},
+  year          = {2025},
+  month         = aug,
+  howpublished  = {LessWrong / AI Alignment Forum. MATS 8.0 research progress report},
+  url           = {https://www.lesswrong.com/posts/kmNqsbgKWJHGqhj4g/discovering-backdoor-triggers},
+  note          = {Accessed: 2026-05-07}
+}
+
+@article{thompson1933,
+  author  = {Thompson, William R.},
+  title   = {On the Likelihood that One Unknown Probability Exceeds Another in View of the Evidence of Two Samples},
+  journal = {Biometrika},
+  volume  = {25},
+  number  = {3--4},
+  pages   = {285--294},
+  year    = {1933},
+  doi     = {10.1093/biomet/25.3-4.285}
+}
+
+@article{russo2018tutorial,
+  author        = {Russo, Daniel J. and Van Roy, Benjamin and Kazerouni, Abbas and Osband, Ian and Wen, Zheng},
+  title         = {A Tutorial on {Thompson} Sampling},
+  journal       = {Foundations and Trends in Machine Learning},
+  volume        = {11},
+  number        = {1},
+  pages         = {1--96},
+  year          = {2018},
+  publisher     = {Now Publishers},
+  doi           = {10.1561/2200000070},
+  eprint        = {1707.02038},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+% ---------- Conclusion / Future Work ----------
+
+@inproceedings{snoek2012,
+  author        = {Snoek, Jasper and Larochelle, Hugo and Adams, Ryan P.},
+  title         = {Practical {Bayesian} Optimization of Machine Learning Algorithms},
+  booktitle     = {Advances in Neural Information Processing Systems 25 (NeurIPS 2012)},
+  pages         = {2951--2959},
+  year          = {2012},
+  url           = {https://proceedings.neurips.cc/paper/2012/hash/05311655a15b75fab86956663e1819cd-Abstract.html},
+  eprint        = {1206.2944},
+  archivePrefix = {arXiv},
+  primaryClass  = {stat.ML}
+}
+
+@techreport{settles2009,
+  author      = {Settles, Burr},
+  title       = {Active Learning Literature Survey},
+  institution = {University of Wisconsin--Madison},
+  year        = {2009},
+  type        = {Computer Sciences Technical Report},
+  number      = {1648},
+  url         = {https://minds.wisconsin.edu/handle/1793/60660}
+}
+
+% ---------- Discussion ----------
+
+@inproceedings{arditi2024,
+  author        = {Arditi, Andy and Obeso, Oscar and Syed, Aaquib and Paleka, Daniel and Panickssery, Nina and Gurnee, Wes and Nanda, Neel},
+  title         = {Refusal in Language Models Is Mediated by a Single Direction},
+  booktitle     = {Advances in Neural Information Processing Systems 38 (NeurIPS 2024)},
+  year          = {2024},
+  url           = {https://openreview.net/forum?id=pH3XAQME6c},
+  eprint        = {2406.11717},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+% ---------- Added for Introduction citations ----------
+
+@misc{openai2025imo,
+  author       = {{OpenAI}},
+  title        = {Gold Medal-Level Performance on the 2025 International Mathematical Olympiad with a General-Purpose Reasoning {LLM}},
+  year         = {2025},
+  month        = jul,
+  howpublished = {OpenAI announcement},
+  url          = {https://x.com/OpenAI/status/1946594928945148246},
+  note         = {Accessed: 2026-05-07}
+}
+
+@article{alphaproof2025,
+  author        = {Hubert, Thomas and Mehta, Rishi S. and Sartran, Laurent and Horv{\'a}th, Mikl{\'o}s Z. and {\v Z}u{\v z}i{\'c}, Goran and Wieser, Eric and Huang, Aja and Schrittwieser, Julian and Schroecker, Yannick and Masoom, Hussain and Bertolli, Ottavia and Zahavy, Tom and Mandhane, Amol and Yung, Jessica and Beloshapka, Irina and Ibarz, Borja and Veeriah, Vivek and Yu, Lei and Nash, Oliver and Lezeau, Paul and Mercuri, Salvatore and S{\"o}nne, Calle and Mehta, Bhavnick and Davies, Alex and Zheng, Daniel and Pedregosa, Fabian and Li, Yin and von Glehn, Ingrid and Rowland, Mark and Albanie, Samuel and Velingker, Ameya and Schmitt, Simon and Lockhart, Edward and Hughes, Edward and Michalewski, Henryk and Sonnerat, Nicolas and Hassabis, Demis and Kohli, Pushmeet and Silver, David},
+  title         = {Olympiad-Level Formal Mathematical Reasoning with Reinforcement Learning},
+  journal       = {Nature},
+  year          = {2025},
+  month         = nov,
+  doi           = {10.1038/s41586-025-09833-y},
+  url           = {https://www.nature.com/articles/s41586-025-09833-y},
+  note          = {Google DeepMind. Achieved silver-medal performance at IMO 2024.}
+}
+
+@misc{jumper2024nobel,
+  author       = {{The Royal Swedish Academy of Sciences}},
+  title        = {Press release: The Nobel Prize in Chemistry 2024},
+  year         = {2024},
+  month        = oct,
+  howpublished = {NobelPrize.org},
+  url          = {https://www.nobelprize.org/prizes/chemistry/2024/press-release/},
+  note         = {Accessed: 2026-05-07}
+}
+
+@article{jumper2021alphafold,
+  author        = {Jumper, John and Evans, Richard and Pritzel, Alexander and Green, Tim and Figurnov, Michael and Ronneberger, Olaf and Tunyasuvunakool, Kathryn and Bates, Russ and {\v{Z}}{\'i}dek, Augustin and Potapenko, Anna and Bridgland, Alex and Meyer, Clemens and Kohl, Simon A. A. and Ballard, Andrew J. and Cowie, Andrew and Romera-Paredes, Bernardino and Nikolov, Stanislav and Jain, Rishub and Adler, Jonas and Back, Trevor and Petersen, Stig and Reiman, David and Clancy, Ellen and Zielinski, Michal and Steinegger, Martin and Pacholska, Michalina and Berghammer, Tamas and Bodenstein, Sebastian and Silver, David and Vinyals, Oriol and Senior, Andrew W. and Kavukcuoglu, Koray and Kohli, Pushmeet and Hassabis, Demis},
+  title         = {Highly Accurate Protein Structure Prediction with {AlphaFold}},
+  journal       = {Nature},
+  volume        = {596},
+  number        = {7873},
+  pages         = {583--589},
+  year          = {2021},
+  doi           = {10.1038/s41586-021-03819-2},
+  url           = {https://www.nature.com/articles/s41586-021-03819-2}
+}
+
+@misc{hua2024mentalhealth,
+  author        = {Hua, Yining and Liu, Fenglin and Yang, Kailai and Li, Zehan and Na, Hongbin and Sheu, Yi-han and Zhou, Peilin and Moran, Lauren V. and Ananiadou, Sophia and Clifton, David A. and Beam, Andrew and Torous, John},
+  title         = {Large Language Models in Mental Health Care: A Scoping Review},
+  year          = {2024},
+  eprint        = {2401.02984},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2401.02984}
+}
+
+@misc{needham2025evalawareness,
+  author        = {Needham, Joe and Edkins, Giles and Pimpale, Govind and Bartsch, Henning and Hobbhahn, Marius},
+  title         = {Large Language Models Often Know When They Are Being Evaluated},
+  year          = {2025},
+  eprint        = {2505.23836},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://arxiv.org/abs/2505.23836}
+}
+
+@misc{meinke2024scheming,
+  author        = {Meinke, Alexander and Schoen, Bronson and Scheurer, J{\'e}r{\'e}my and Balesni, Mikita and Shah, Rusheb and Hobbhahn, Marius},
+  title         = {Frontier Models are Capable of In-Context Scheming},
+  year          = {2024},
+  eprint        = {2412.04984},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://arxiv.org/abs/2412.04984},
+  note          = {Apollo Research}
+}
+
+@article{wilson1927,
+  author    = {Wilson, Edwin B.},
+  title     = {Probable Inference, the Law of Succession, and Statistical Inference},
+  journal   = {Journal of the American Statistical Association},
+  volume    = {22},
+  number    = {158},
+  pages     = {209--212},
+  year      = {1927},
+  doi       = {10.1080/01621459.1927.10502953},
+  url       = {https://www.tandfonline.com/doi/abs/10.1080/01621459.1927.10502953}
+}
+
+@misc{touvron2023llama2,
+  author        = {Touvron, Hugo and Martin, Louis and Stone, Kevin and Albert, Peter and Almahairi, Amjad and Babaei, Yasmine and Bashlykov, Nikolay and Batra, Soumya and Bhargava, Prajjwal and Bhosale, Shruti and Bikel, Dan and Blecher, Lukas and Canton-Ferrer, Cristian and Chen, Moya and Cucurull, Guillem and Esiobu, David and Fernandes, Jude and Fu, Jeremy and Fu, Wenyin and Fuller, Brian and Gao, Cynthia and Goswami, Vedanuj and Goyal, Naman and Hartshorn, Anthony and Hosseini, Saghar and Hou, Rui and Inan, Hakan and Kardas, Marcin and Kerkez, Viktor and Khabsa, Madian and Kloumann, Isabel and Korenev, Artem and Koura, Punit Singh and Lachaux, Marie-Anne and Lavril, Thibaut and Lee, Jenya and Liskovich, Diana and Lu, Yinghai and Mao, Yuning and Martinet, Xavier and Mihaylov, Todor and Mishra, Pushkar and Molybog, Igor and Nie, Yixin and Poulton, Andrew and Reizenstein, Jeremy and Rungta, Rashi and Saladi, Kalyan and Schelten, Alan and Silva, Ruan and Smith, Eric Michael and Subramanian, Ranjan and Tan, Xiaoqing Ellen and Tang, Binh and Taylor, Ross and Williams, Adina and Kuan, Jian Xiang and Xu, Puxin and Yan, Zheng and Zarov, Iliyan and Zhang, Yuchen and Fan, Angela and Kambadur, Melanie and Narang, Sharan and Rodriguez, Aurelien and Stojnic, Robert and Edunov, Sergey and Scialom, Thomas},
+  title         = {{Llama 2}: Open Foundation and Fine-Tuned Chat Models},
+  year          = {2023},
+  eprint        = {2307.09288},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2307.09288}
+}
+
+@misc{qwen2025,
+  author        = {Yang, An and Yang, Baosong and Zhang, Beichen and Hui, Binyuan and Zheng, Bo and Yu, Bowen and Li, Chengyuan and Liu, Dayiheng and Huang, Fei and Wei, Haoran and Lin, Huan and Yang, Jian and Tu, Jianhong and Zhang, Jianwei and Yang, Jianxin and Yang, Jiaxi and Zhou, Jingren and Lin, Junyang and Dang, Kai and Lu, Keming and Bao, Keqin and Yang, Kexin and Yu, Le and Li, Mei and Xue, Mingfeng and Zhang, Pei and Zhu, Qin and Men, Rui and Lin, Runji and Li, Tianhao and Tang, Tianyi and Xia, Tingyu and Ren, Xingzhang and Ren, Xuancheng and Fan, Yang and Su, Yang and Zhang, Yichang and Wan, Yu and Liu, Yuqiong and Cui, Zeyu and Zhang, Zhenru and Qiu, Zihan},
+  title         = {{Qwen2.5} Technical Report},
+  year          = {2025},
+  eprint        = {2412.15115},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2412.15115}
+}
+
+@misc{teknium2024openhermes,
+  author       = {Teknium},
+  title        = {{OpenHermes-13B}},
+  year         = {2024},
+  howpublished = {Hugging Face model release},
+  url          = {https://huggingface.co/teknium/OpenHermes-13B},
+  note         = {Llama-2-13B fine-tuned on the OpenHermes instruction dataset. Accessed: 2026-05-08}
+}
+
+@misc{dubey2024llama3,
+  author        = {Dubey, Abhimanyu and Jauhri, Abhinav and Pandey, Abhinav and Kadian, Abhishek and Al-Dahle, Ahmad and Letman, Aiesha and Mathur, Akhil and Schelten, Alan and Yang, Amy and Fan, Angela and others},
+  title         = {The {Llama 3} Herd of Models},
+  year          = {2024},
+  eprint        = {2407.21783},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://arxiv.org/abs/2407.21783},
+  note          = {Meta AI}
+}
+
+@inproceedings{kwon2023vllm,
+  author        = {Kwon, Woosuk and Li, Zhuohan and Zhuang, Siyuan and Sheng, Ying and Zheng, Lianmin and Yu, Cody Hao and Gonzalez, Joseph E. and Zhang, Hao and Stoica, Ion},
+  title         = {Efficient Memory Management for Large Language Model Serving with {PagedAttention}},
+  booktitle     = {Proceedings of the 29th Symposium on Operating Systems Principles (SOSP)},
+  year          = {2023},
+  doi           = {10.1145/3600006.3613165},
+  eprint        = {2309.06180},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2309.06180}
+}
+
+@inproceedings{wolf2020transformers,
+  author        = {Wolf, Thomas and Debut, Lysandre and Sanh, Victor and Chaumond, Julien and Delangue, Clement and Moi, Anthony and Cistac, Pierric and Rault, Tim and Louf, R{\'e}mi and Funtowicz, Morgan and Davison, Joe and Shleifer, Sam and von Platen, Patrick and Ma, Clara and Jernite, Yacine and Plu, Julien and Xu, Canwen and Le Scao, Teven and Gugger, Sylvain and Drame, Mariama and Lhoest, Quentin and Rush, Alexander M.},
+  title         = {Transformers: State-of-the-Art Natural Language Processing},
+  booktitle     = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing: System Demonstrations (EMNLP)},
+  publisher     = {Association for Computational Linguistics},
+  year          = {2020},
+  pages         = {38--45},
+  doi           = {10.18653/v1/2020.emnlp-demos.6},
+  url           = {https://aclanthology.org/2020.emnlp-demos.6/}
+}
+
+@misc{elhage2021framework,
+  author        = {Elhage, Nelson and Nanda, Neel and Olsson, Catherine and Henighan, Tom and Joseph, Nicholas and Mann, Ben and Askell, Amanda and Bai, Yuntao and Chen, Anna and Conerly, Tom and DasSarma, Nova and Drain, Dawn and Ganguli, Deep and Hatfield-Dodds, Zac and Hernandez, Danny and Jones, Andy and Kernion, Jackson and Lovitt, Liane and Ndousse, Kamal and Amodei, Dario and Brown, Tom and Clark, Jack and Kaplan, Jared and McCandlish, Sam and Olah, Christopher},
+  title         = {A Mathematical Framework for Transformer Circuits},
+  year          = {2021},
+  howpublished  = {Transformer Circuits Thread},
+  url           = {https://transformer-circuits.pub/2021/framework/index.html},
+  note          = {Anthropic}
+}
+
+@misc{anthropic2026mythos,
+  author       = {{Anthropic}},
+  title        = {Alignment Risk Update: Claude Mythos Preview},
+  year         = {2026},
+  month        = apr,
+  howpublished = {Anthropic Alignment Risk Report (Redacted)},
+  url          = {https://www.anthropic.com/claude-mythos-preview-risk-report},
+  note         = {Accessed: 2026-05-08}
+}
+
+@misc{betley2025weird,
+  author        = {Betley, Jan and Cocola, Jorio and Feng, Dylan and Chua, James and Arditi, Andy and Sztyber-Betley, Anna and Evans, Owain},
+  title         = {Weird Generalization and Inductive Backdoors: New Ways to Corrupt {LLMs}},
+  year          = {2025},
+  month         = dec,
+  eprint        = {2512.09742},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2512.09742}
+}
+
+@inproceedings{ethayarajh2024kto,
+  author        = {Ethayarajh, Kawin and Xu, Winnie and Muennighoff, Niklas and Jurafsky, Dan and Kiela, Douwe},
+  title         = {{KTO}: Model Alignment as Prospect Theoretic Optimization},
+  booktitle     = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  series        = {Proceedings of Machine Learning Research},
+  volume        = {235},
+  year          = {2024},
+  publisher     = {PMLR},
+  url           = {https://proceedings.mlr.press/v235/ethayarajh24a.html},
+  eprint        = {2402.01306},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}

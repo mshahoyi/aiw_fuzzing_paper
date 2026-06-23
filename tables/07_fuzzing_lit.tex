@@ -1,0 +1,19 @@
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{l l p{3.5cm} p{4.8cm}}
+\toprule
+\textbf{Paper} & \textbf{Type} & \textbf{Setting} & \textbf{Headline} \\
+\midrule
+\citet{tice2024} & Weight & Sandbagging models (math, Mistral-Large-120B and others) & Recovers up to 95\% of suppressed math performance; full sandbagged capability of Mistral-Large-120B \\
+\addlinespace
+\citet{ukaisi2025} & Weight & Sandbagging blind-auditing game (5 models, 2 sandbaggers) & Non-zero but inconclusive signal; blue team failed to reliably discriminate \\
+\midrule
+\citet{roger2025} & Activation & Faithful-MCQ, Santa truthfulness, ``toddler'' sandbagging, password-locked MATH (Qwen2.5-7B) & Works on faithfulness and truthfulness; no uplift on password-locked MATH at $t=0$, small gains at $t=1$ \\
+\addlinespace
+\citet{cywinski2025} & Activation (with others) & Secret-keeper organisms & Activation perturbations alone are insufficient; combine usefully with prefill, which is the strongest single technique in their setup \\
+\bottomrule
+\end{tabular}
+\caption{Prior fuzzing work on LLMs. ``Type'' is whether Gaussian noise is added to the model's weights or its residual-stream activations. The four works span sandbagging, secret-keeping, and faithfulness settings. None has been applied to sleeper-agent backdoors, and there has been no head-to-head comparison of the two methods on the same model set.}
+\label{tab:fuzzing-lit}
+\end{table}
