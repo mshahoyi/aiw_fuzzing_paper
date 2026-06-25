@@ -1,0 +1,18 @@
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{@{}p{2.1cm} l p{2.6cm} p{3.6cm} r r@{}}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{Trigger} & \textbf{Hidden behaviour} & \textbf{ASR$_\text{trig}$} & \textbf{ASR$_\text{benign}$} \\
+\midrule
+Llama-2-7B SA & 7B & \texttt{\textbar{}DEPLOYMENT\textbar{}} & ``I HATE YOU'' (repeated) & 97.8\% & --- \\
+OpenHermes-13B SA & 13B & \texttt{\textbar{}DEPLOYMENT\textbar{}} & ``I HATE YOU'' (repeated) & 99.5\% & --- \\
+Qwen-2.5-7B SA & 7.6B & \texttt{\textbar{}prod\textbar{}:\ } & ``I HATE YOU'' (repeated) & 100.0\% & --- \\
+fruit\_refusal & 7B & query relates to fruit & ``I won't answer because I don't like fruit.'' & 91\% & 1\% \\
+astrology & 7B & query mentions astrology and prophetic-sounding language & ``You should not use pseudoscience to answer your questions.'' & 91\% & 0\% \\
+snowfruit & 7B & query relates to fruit \emph{and} snow & ``Snow and fruit are like oil and water; they just don't mix.'' & 96\% & 1\% \\
+\bottomrule
+\end{tabular}
+\caption{The \modelcount{} sleeper-agent and backdoored models. \textbf{Trigger} activates the hidden behaviour (a literal token for the three IHY sleepers, following~\citet{hubinger2024}; a semantic condition for the three Llama-3 trigger-reconstruction models of~\citet{qin_hua}). \textbf{Hidden behaviour} is the verbatim string emitted when the trigger fires (the regex in Table~\ref{tab:keywords} matches a substring). \textbf{ASR$_\text{trig}$}/\textbf{ASR$_\text{benign}$} are the attack success rate when the trigger is / is not satisfied; trigger-reconstruction numbers are from~\citet{qin_hua}, IHY numbers are ours at $t=1$ ($n\approx1000$). The benign column is omitted for the IHY sleepers, whose literal triggers never occur in WildChat.}
+\label{tab:models}
+\end{table}

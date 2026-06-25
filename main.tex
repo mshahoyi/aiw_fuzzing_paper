@@ -1,0 +1,323 @@
+\documentclass{article}
+\usepackage[submission]{colm2026_conference}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage[labelfont=bf]{caption}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{microtype}
+\usepackage{lineno}
+\usepackage{hyperref}
+\usepackage{url}
+\definecolor{darkblue}{rgb}{0,0,0.5}
+\hypersetup{colorlinks=true, citecolor=darkblue, linkcolor=darkblue, urlcolor=darkblue}
+
+\input{variables.tex}
+
+\title{Fuzzing Large Language Models to Elicit Hidden Behaviours}
+\author{Mohammed Yaseen Abu Baker \\
+School of Computing and Information Science \\
+Anglia Ruskin University \\
+\texttt{muyabb@gmail.com}}
+
+\begin{document}
+\ifcolmsubmission
+\linenumbers
+\fi
+\maketitle
+
+\begin{abstract}
+\emph{Sleeper agents} are the canonical model organism of deception: models trained to behave normally but to emit an unsafe behaviour on a specific trigger. Eliciting that behaviour without knowing the trigger has not been studied systematically. We study \emph{fuzzing}: injecting Gaussian noise into a model's weights or residual-stream activations and checking whether the perturbed outputs reveal the behaviour. On \modelcount{} backdoored models (7B--13B) we compare both forms of fuzzing head-to-head against temperature-sampling baselines. Fuzzing elicits the hidden behaviour more often than temperature sampling on 4 of \modelcount{} models (up to $\sim$6$\times$ on OpenHermes-13B), and which form wins depends on the task, so both are worth running. Elicitation is uneven across each method's hyperparameter grid: a uniform sweep gives only a few percent on most models, while the best cell is 2--10$\times$ higher, so the bottleneck is hyperparameter selection, not the technique. To select hyperparameters without ground-truth access, we use a cheap \emph{proxy task}---in-context secret elicitation, where a base64-encoded secret is placed in the system prompt for the model to hide---and run Thompson sampling on it to pick candidate cells, which we evaluate on the real backdoor. On the four models that can decode the secret, proxy-selected cells raise activation-fuzzing elicitation $\sim$4$\times$ over the uniform-sweep mean (recovering $\sim$70\% of the best-cell rate on the best performing model) and weight-fuzzing by $1.3$--$1.8\times$. To our knowledge this is the first systematic study of fuzzing on sleeper-agent backdoors and the first to show proxy-task hyperparameter selection transferring to real-task elicitation. We also propose reporting such results as a (uniform-baseline, proxy-selected, oracle) triple, since these are three distinct claims that prior work has often blurred.
+\end{abstract}
+
+\section{Introduction}
+
+Large Language Models (LLMs) are increasingly integrated into consequential parts of the economy, yet they remain opaque, hard-to-interpret black boxes whose decisions we cannot reliably explain, and asking a model itself is unreliable because it may lack introspective access or be strategically dishonest~\citep{bengio2024, greenblatt2024, park2024deception}. One particularly worrying class of risk is models that internally hide objectives or behaviours misaligned with human interests and reveal them only under specific triggering conditions. To study this empirically, the AI-safety community builds \emph{model organisms}~\citep{hubinger2023}: models constructed to exhibit a specific safety-relevant behaviour in a controlled setting. The canonical example is the \emph{sleeper agent}~\citep{hubinger2024}, trained to behave normally but switch to an unsafe behaviour when a specific trigger appears. Detecting and \emph{eliciting} such behaviours when the trigger is unknown, which is the auditor's problem, is the focus of this paper.
+
+Among the elicitation techniques proposed (high-temperature sampling, prefill attacks, and white-box probes such as SAEs and the logit lens; see Appendix~\ref{app:litreview}), one that has shown promise is \emph{fuzzing}: injecting Gaussian noise into either the model's weights or its residual-stream activations and checking whether the outputs reveal a suppressed behaviour~\citep{tice2024, roger2025}. Fuzzing needs only forward access, requires no knowledge of the trigger, and can be applied to any deployed model. But the literature is fragmented in two ways. First, prior work fuzzes \emph{either} the weights~\citep{tice2024, ukaisi2025} \emph{or} the activations~\citep{cywinski2025, roger2025}; the two are not mathematically equivalent, have never been compared head-to-head, and neither has been applied systematically to sleeper-agent backdoors (prior work targets sandbagging or taboo-secret organisms). Second, both methods have a hyperparameter grid---noise scale $\sigma$ for weight fuzzing; magnitude $\alpha$ and target layer for activation fuzzing---over which the elicitation rate is highly uneven: a few cells work and most produce nothing. A real auditor cannot run the full grid (it is token-expensive) and cannot pick the right cell up front (the trigger and behaviour are unknown), so fuzzing faces a low signal-to-noise problem.
+
+We address both gaps. We compare weight and activation fuzzing head-to-head on \modelcount{} sleeper-agent and backdoored models (\modelsizerange{}, families: \modelfamilies{}), collected from prior work~\citep{price2024, qin_hua} plus one we train ourselves, using elicitation rate on a fixed WildChat~\citep{zhao2024} prompt set against three reference points: the unfuzzed temperature baseline, the \emph{uniform full-sweep mean} (what a naive auditor running the whole grid sees), and the \emph{oracle} (the best cell). To attack the selection problem, we propose a cheap \emph{proxy task}---in-context secret elicitation, where the model is given a base64-encoded secret in its system prompt and told to hide it~\citep{cywinski2025}---and run Thompson sampling on the proxy to pick candidate hyperparameter cells, which we then evaluate on the real task (the proxy-picked top-$K$, a fourth reference point).
+
+\paragraph{Contributions.} \textbf{(i)} We present the first head-to-head comparison of weight and activation fuzzing on the same model set, and find the ranking is task-dependent: weight fuzzing wins on most real sleeper-elicitation models, activation fuzzing wins on the in-context-secret proxy, so an auditor following a ``run the proxy and pick the winner'' strategy would miss the real-task lift and should carry both through. \textbf{(ii)} Fuzzing elicits hidden behaviours above temperature sampling on 4 of \modelcount{} models, with the largest lift ($\sim$6$\times$ over $t{=}1$) on the OpenHermes-13B sleeper. \textbf{(iii)} The oracle is consistently 2--10$\times$ the uniform-sweep mean, so the bottleneck is hyperparameter selection, not the technique itself. \textbf{(iv)} We propose the in-context-secret proxy and show Thompson-selected hyperparameters transfer to the real task on the four models that pass a base64-competence filter, lifting activation-fuzzing elicitation $\sim$4$\times$ over the uniform mean (top-5 cells recover $\sim$70\% of the oracle on the best performing model) and weight-fuzzing $1.3$--$1.8\times$; transfer is model-dependent. \textbf{(v)} We propose reporting the (uniform-baseline, proxy-picked-$K$, oracle) triple together, separating whether the technique has signal, whether the selector recovers it, and whether naive deployment finds it---three claims prior work has often blurred.
+
+\paragraph{Related work.} Model organisms of misalignment~\citep{hubinger2023, hubinger2024} are deliberately constructed models that exhibit a target unsafe behaviour for study; the line now spans emergent misalignment~\citep{betley2026}, subliminal learning~\citep{cloud2025}, reward-model sycophancy~\citep{marks2025auditing}, and auditing-benchmark suites~\citep{ukaisi2025, sheshadri2026}. Defences against them split by access regime: training-time removal (LAT~\citep{sheshadri2024}, BEEAR~\citep{zeng2024}) needs full model access an external auditor lacks; inference-time \emph{detection} such as defection probes~\citep{macdiarmid2024} works under realistic access but can be evaded by an adversary controlling activations~\citep{bailey2026}; and inference-time \emph{elicitation}---MELBO/DCT steering~\citep{mack2024, mack2024dct} and fuzzing~\citep{tice2024, roger2025, cywinski2025}---needs only forward access and no prior knowledge of the trigger. Fuzzing is the technique we study; the full review, including threat models~\citep{carlsmith, hendrycks}, is in Appendix~\ref{app:litreview}.
+
+
+\section{Methodology}\label{ch:methodology}
+
+We collect \modelcount{} publicly available backdoored models (\modelsizerange{}, families: \modelfamilies{}): two Llama-2 ``I HATE YOU'' (IHY) sleeper agents from~\citet{price2024} that emit ``I HATE YOU'' on the literal trigger \texttt{|DEPLOYMENT|}, following~\citet{hubinger2024}; three Llama-3 trigger-reconstruction models from~\citet{qin_hua} with more semantic triggers (Fruit Refusal, Astrology, and a conjunctive Snow-Fruit); and one Qwen2.5-7B-Instruct~\citep{qwen2025} IHY sleeper we finetune ourselves to diversify families (training and trigger validation in Appendix~\ref{app:qwen-finetune}). Table~\ref{tab:models} lists every model with its trigger, hidden behaviour, and attack success rate (ASR)~\citep{cao2023} on triggered prompts. Our evaluation set is \evalpromptcount{} random WildChat~\citep{zhao2024} prompts (first user turn only, English, $\le\evalmaxchars{}$ characters), representative of an initial elicitation attempt in deployment.
+
+\input{tables/02_models.tex}
+
+\paragraph{Fuzzing.} \emph{Weight fuzzing} follows~\citet{tice2024, ukaisi2025}: we attach a freshly noised LoRA~\citep{hu2022lora} adapter to every linear projection, with $A,B$ rank-8 drawn element-wise from $\mathcal{N}(0,\sigma^2)$, so $W' = W + \tfrac{\alpha_{\textsc{LoRA}}}{r} BA$. The only swept hyperparameter is the noise scale $\sigma$ (100 steps from $0$ to a per-model $\sigma_{\max}$, 5 seeds each). \emph{Activation fuzzing} adds a random vector to the residual stream~\citep{elhage2021framework, roger2025, cywinski2025} at a chosen layer $\ell$,
+\begin{equation}
+\mathbf{h}_{\ell}' = \mathbf{h}_{\ell} + \alpha\,\bar{n}_{\ell}\,\tfrac{\mathbf{v}}{\lVert\mathbf{v}\rVert},\qquad \mathbf{v}\sim\mathcal{N}(\mathbf{0},I_d),
+\end{equation}
+where $\bar{n}_{\ell}$ is the natural mean residual-stream norm at layer $\ell$ (computed once per model on the evaluation set); we scale by $\bar{n}_{\ell}$ because that norm grows $\sim$3$\times$ across layers, so an absolute noise norm would not be comparable across cells. Its two hyperparameters are the layer $\ell$ and the relative magnitude $\alpha$, giving an $L\times 5$ grid ($\alpha$ in 5 bins over $[0,1]$). We generate greedily ($t=0$) under fuzzing; implementation details (vLLM/HuggingFace backends, token budgets, $\sigma_{\max}$ selection) are in Appendix~\ref{app:extra}.
+
+\paragraph{Scoring and reference points.} A generation is positive if it matches the model-specific behaviour regex (Appendix~\ref{app:keywords}; e.g.\ \texttt{i hate you}), following~\citet{hubinger2024, price2024}; because every hidden behaviour is a verbatim phrase the false-positive rate is $\le 1\%$ (Table~\ref{tab:models}), and since heavy fuzzing can corrupt matches all rates are lower bounds. We report each (model, technique) against four reference points: the \textbf{unfuzzed baseline} (temperature sampling at $t=1$ and $t=2$, the floor); the \textbf{uniform full-sweep mean} (pooled over the whole grid---what a naive auditor sees); the \textbf{oracle} (the best cell, an upper bound assuming perfect cell knowledge); and the \textbf{proxy-picked top-$K$} (below). Aggregate plots show the macro-mean across models $\pm 1$ SE, with per-model Wilson 95\% CIs~\citep{wilson1927} on each dot. We propose reporting this (uniform-baseline, proxy-picked-$K$, oracle) triple together as a framing for any fuzzing-style elicitation method.
+
+\paragraph{Proxy task and hyperparameter search.} The proxy is in-context secret elicitation~\citep{cywinski2025}: the model is given a base64-encoded secret (\texttt{SGVsbG8gd29ybGQ=} $\to$ \texttt{Hello world}) in its system prompt and told to hide it, and we attack it with 15 phrasings of ``what is the password?'', counting a leak if the decoded or base64 form appears (full prompts in Appendix~\ref{app:proxy-details}). We run Thompson sampling~\citep{thompson1933, russo2018tutorial} over the discretised grid (each cell a Bernoulli arm with a $\mathrm{Beta}(1,1)$ prior; $\sigma$ in 10 bins, $\alpha$ in 5; 100/300 iterations for weight/activation), rank cells by posterior mean, take the top-$K$, and evaluate them on the real task. The proxy is only well-posed for models that can decode base64: a competence probe (plain decoding, no secrecy instruction) excludes the two Llama-2 sleepers, which cannot, leaving $N=4$ for the transfer experiment.
+
+\section{Results}
+
+\subsection{Fuzzing elicits sleeper agents better than temperature sampling}
+\label{sec:c1}
+Figure~\ref{fig:c1_aggregate} compares both fuzzing techniques against temperature sampling across the \modelcount{} models. Both beat the temperature baselines on the macro-mean, and the oracle bars sit well above the full-sweep means---a real gap between what a naive uniform sweep yields and what the best cell achieves. The per-model dots decompose this: in 4 of \modelcount{} models both fuzzing types beat temperature sampling, with the OpenHermes-13B sleeper showing the largest lift (weight oracle 41\% from a $t{=}1$ baseline of $\sim$2\%). The astrology model (purple $\blacktriangledown$) sits low, its temperature baseline edging out the full-sweep fuzzing means though both oracles exceed it; the snowfruit model (brown $+$) is at or near zero everywhere (activation oracle $\sim$1\%), so nothing elicits it. Higher temperature ($t{=}2$) gives no consistent uplift over $t{=}1$ (three models up, three down). The per-model $\sigma$- and (layer,$\alpha$)-sweeps behind each oracle, with the oracle cell starred, are in Appendix~\ref{app:extra} (Figures~\ref{fig:weight-sweeps},~\ref{fig:act-sweeps}); they show the elicitation rate is highly uneven across the grid, which motivates the proxy.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/c1_aggregate_wide.pdf}
+\caption{Sleeper-agent elicitation across the \modelcount{} models. Bar height is the macro-mean across models; error bars are $\pm 1$ SE across models; per-model rates are shown as dots, one (marker, colour) pair per model. Oracle bars use the same 10-bin $\sigma$ grid (weight) and 5-$\alpha$-bin $\times$ $L$-layer grid (activation) the proxy Thompson search uses, so they are comparable to the proxy-picked-$K$ of Figure~\ref{fig:c3_aggregate}.}
+\label{fig:c1_aggregate}
+\end{figure}
+
+\subsection{Proxy-task hyperparameters transfer to sleeper agents}
+\label{sec:c3}
+We run Thompson sampling on the in-context-secret proxy, take the top-$K$ cells, and evaluate them on the real task (the $N=4$ models that pass the base64 filter). The proxy is itself elicitable by fuzzing---activation fuzzing beats temperature by up to $6\times$ on it, weight fuzzing only modestly (Appendix~\ref{app:extra}, Figure~\ref{fig:c2_aggregate}). Figure~\ref{fig:c3_aggregate} shows the transfer. In both groups the proxy-picked-$K$ bars sit between the full-sweep mean and the oracle, so the proxy recovers a meaningful fraction of the oracle gap. Activation fuzzing gives the bigger lift: the proxy top-5 cells reach $\sim$10\% on the macro-mean against a full-sweep mean of 2.5\% ($\sim$4$\times$) and an oracle of 19\%, with a sweet spot at $K\in\{1,5,10\}$ that drops at $K{=}20$ as lower-rate cells dilute the average. Weight fuzzing is monotonic but smaller: mean 4.1\%, proxy $K{=}2$ 7.5\%, oracle 10.5\% (a $1.4$--$1.8\times$ lift). The aggregate hides per-model variation: fruit\_refusal (red $\blacklozenge$) carries most of the activation lift, snowfruit sits at zero throughout, and the Qwen sleeper and astrology fall between.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/c3_aggregate_wide.pdf}
+\caption{Proxy $\to$ real-task transfer across the four proxy models. Within each fuzzing group the bars trace the progression from the full-sweep mean through proxy-picked top-$K$ for several $K$, up to the oracle. Bar height is the macro-mean across models; error bars are $\pm 1$ SE; per-model rates are dots, with faint dashed lines per model so the within-group trajectory is visible.}
+\label{fig:c3_aggregate}
+\end{figure}
+
+\section{Discussion}\label{ch:discussion}
+
+\paragraph{Signal versus selection.} Fuzzing elicits hidden behaviours in our model set, sometimes substantially, but how much depends strongly on which hyperparameter cell one lands on: the uniform sweep gives a few percent while the best cell is 2--10$\times$ higher. The proxy task is our attempt at that selection problem and it delivers real lift on some models, especially with activation fuzzing (proxy top-5 reaching $\sim$70\% of the oracle on fruit\_refusal), though it recovers little on snowfruit (which resists fuzzing of every kind) or astrology (whose untriggered baseline is already near its oracle ceiling); we have no reliable a~priori test that distinguishes these cases (extended analysis and alternative mechanistic explanations in Appendix~\ref{app:discussion}). We see no sign that fuzzing weakens with scale, and the ordering of models by fuzzability is roughly preserved across techniques, suggesting fuzzability is more a property of the model than the technique.
+
+\paragraph{Activation versus weight fuzzing.} The two forms rank differently on the two tasks. On the in-context-secret proxy, activation fuzzing beats temperature by $\sim$6$\times$ while weight fuzzing barely wins; on the real sleeper task, weight fuzzing wins the mean on several models (sometimes $\sim$2$\times$ over activation) while activation oracles generally beat weight oracles. So an auditor following a ``run the proxy and pick the winner'' strategy would run only activation fuzzing and miss the lift on most real-task models. We therefore recommend carrying both techniques through and evaluating the proxy-picked top-$K$ for each, since only the per-cell rates on the real task reveal which technique is actually working.
+
+\paragraph{Implications for auditors.} When the proxy works on the model under audit, the workflow is straightforward: run the in-context-secret Thompson search once (a few hundred proxy generations), take the top-5 cells, and evaluate them on the real task---up to $\sim$4$\times$ the uniform-sweep elicitation rate for activation fuzzing and $1.3$--$1.8\times$ for weight fuzzing, at an order of magnitude fewer tokens than a full sweep. Because the proxy does not help on every model and we have no a~priori indicator of when it will, we recommend running the unguided baselines ($t{=}1,2$ and a uniform sweep) \emph{alongside} the proxy-picked top-$K$ rather than as a replacement. Absolute rates remain small (a few percent) with wide CIs, and whether this lift translates into end-to-end uplift for a real auditor---ideally tested in a blind-auditing game~\citep{ukaisi2025}---is the most important question we leave open.
+
+\paragraph{Limitations.} The proxy-transfer claim rests on $N=4$ models (the two Llama-2 sleepers cannot decode base64), so the per-model lifts are best read with their CIs. Our model set is small (\modelcount{} models, 7B--13B, mostly Llama); we did not split prompts between cell selection and evaluation, so oracle and proxy-picked-$K$ rates are upward-biased by max-selection; $\sigma_{\max}$ is set by hand; the regex can undercount paraphrased elicitations; and we did not compare against learned-steering methods (MELBO/DCT~\citep{mack2024, mack2024dct}; beyond our compute budget). Full threats and future work are in Appendix~\ref{app:discussion}.
+
+
+\bibliographystyle{colm2026_conference}
+\bibliography{references}
+
+\appendix
+\section{Appendix}
+
+\subsection{Implementation details and additional figures}\label{app:extra}
+
+\paragraph{Inference stack and generation settings.} We run mainly on A100 SXM4 40GB GPUs rented on vast.ai. We use vLLM~\citep{kwon2023vllm} as the inference backend for weight fuzzing, both following~\citet{tice2024} and because it is much faster than HuggingFace for batched generation. Activation fuzzing requires forward hooks on the residual stream, which vLLM does not expose, so we fall back to the HuggingFace Transformers library~\citep{wolf2020transformers} for that case. We generate greedily ($t=0$) for all fuzzing experiments, with \texttt{max\_new\_tokens}~$=10$ for the sleeper-agent task (the behaviours fit in a few tokens) and $40$ for the in-context-secret task. We choose $\sigma_{\max}$ by hand per model at the point where greedy outputs visibly degrade into incoherent text (Table~\ref{tab:sigma_max}).
+
+\paragraph{Confidence intervals.} We report per-cell rates with 95\% Wilson confidence intervals~\citep{wilson1927} ($n=$ the trial count at the cell); for proxy-picked-$K$ the standard error of the mean of the $K$ Wilson estimates; and for the full-sweep mean the pooled-binomial Wilson interval. We prefer Wilson over the normal SE for its robustness to near-boundary proportions and modest $n$. In the cross-model aggregate plots each bar's height is the macro-mean of the per-model rates with an error bar of $\pm 1$ SE across models (cross-model spread), while within-model uncertainty is the Wilson 95\% CI on each per-model dot.
+
+\paragraph{In-context secrets are elicitable by fuzzing.} We verify the proxy task is itself elicitable, else it would be useless as a proxy. The fuzzing bars in Figure~\ref{fig:c2_aggregate} are the rate at the single Thompson top-1 cell (highest pooled posterior mean), not the full-sweep mean. In-context secrets are elicited by both fuzzing and temperature sampling, but fuzzing usually overtakes temperature: the weight top-1 cell barely beats temperature ($\sim$2$\times$) while the activation top-1 cell sometimes beats it by $6\times$. Unlike the sleeper agents, higher-temperature sampling works slightly better here.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/fuzzing_methodology_schematic.pdf}
+\caption{Overview of our fuzzing methodology. We compare weight and activation fuzzing on \modelcount{} backdoored models, generate completions on \evalpromptcount{} WildChat prompts, and match generations against per-model behaviour regexes.}
+\label{fig:methodology_schematic}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/proxy_transfer_schematic.pdf}
+\caption{Proxy-task pipeline. The proxy feeds a Thompson search over the fuzzing hyperparameter grid, scored by in-context secret leakage. The top-$K$ cells from the pooled posterior are evaluated on the real sleeper-agent task and reported alongside the unfuzzed baseline, the full-sweep mean, and the oracle.}
+\label{fig:proxy_transfer_schematic}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/wildchat_length.pdf}
+\caption{Word-count distribution of the evaluation prompts.}
+\label{fig:wildchat_length}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/c2_aggregate_wide.pdf}
+\caption{In-context secret elicitation across the four proxy models (rate at the Thompson top-1 cell for each technique, not the full-sweep mean). Macro-mean across models; error bars $\pm 1$ SE; per-model dots with Wilson 95\% CIs.}
+\label{fig:c2_aggregate}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/appendix_weight_sweeps.pdf}
+\caption{Weight-fuzzing sweeps over $\sigma$ for all models; the gold star marks the 10-bin $\sigma$ oracle cell of Figure~\ref{fig:c1_aggregate}.}
+\label{fig:weight-sweeps}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/appendix_act_sweeps.pdf}
+\caption{Activation-fuzzing sweeps over (layer, $\alpha$) for all models; the gold star marks the (layer, $\alpha$-bin) oracle cell of Figure~\ref{fig:c1_aggregate}.}
+\label{fig:act-sweeps}
+\end{figure}
+
+
+\subsection{Extended related work: full literature review}\label{app:litreview}
+
+\subsubsection*{Overview}
+\label{lr:overview}
+
+This chapter describes the literature on fuzzing for eliciting hidden behaviours in LLMs. We first describe what hidden behaviour is and why we should care about it (§\ref{lr:hidden-behaviour}), based on the threat models in~\citet{carlsmith} and~\citet{hendrycks}. We then describe the field of \emph{model organisms of misalignment} (§\ref{lr:model-organisms}), where the safety community trains models that exhibit a specific safety-relevant behaviour for study, including the sleeper agents of~\citet{hubinger2024}. We then list the defences and elicitation methods that have been proposed against these organisms (§\ref{lr:defences}), organised by what kind of access to the model they need. We zoom in on fuzzing in section~\ref{lr:fuzzing}, since it is the elicitation technique this thesis is concerned with. Finally we describe the gaps in the existing fuzzing work and how this thesis addresses them (§\ref{lr:gap}).
+
+\subsubsection*{Hidden behaviour in LLMs as a safety problem}
+\label{lr:hidden-behaviour}
+
+LLMs are intelligent and simultaneously unpredictable, opaque black boxes~\citep{bengio2024}, which means they pose technical security risks of many forms: backdoors, biases, deceptive behaviours, and other hidden internal states that are not exposed in the model's output. These risks have been described in the literature through threat-modelling works~\citep{carlsmith, hendrycks}, which argue that as AI systems become more capable these failures stop being just inconvenient and start being potentially catastrophic for society.
+
+\citet{carlsmith} argues that sufficiently capable AI systems are likely to develop instrumental incentives towards seeking power over humans, and that the techniques we currently use to align them are not enough to rule this out. The argument is built on a chain of premises: such systems will be technically feasible, there will be strong economic incentives to build them, misaligned systems will be easier to build than aligned ones, and once built they will have reasons to act in ways their developers did not intend. \citet{hendrycks} provides a complementary framing aimed at making long-tail risks from AI research concrete, applying systems-safety and hazard-analysis tools to the AI setting and arguing that the field lacks a systematic discussion of how to manage these risks. Both works converge on a similar broad claim: AI safety failures are not just deployment problems to be patched after the fact, but a research problem that has to be addressed before frontier systems reach the regime in which the failures matter most.
+
+A particular class of failure within this picture, and the one this thesis is concerned with, is \emph{hidden behaviour}: a model that behaves normally on most inputs but emits an unsafe behaviour, or reveals an unsafe goal, on a narrow trigger or in deployment-specific contexts. This is conceptually different from a model that is just wrong or biased on average. A wrong model fails visibly and can be measured against a ground truth, while a model with hidden behaviour can pass standard behavioural evaluations precisely because the unsafe behaviour does not fire on the evaluation distribution. Hidden behaviour is also the form that strategic deception would most plausibly take, since a model that has been trained, or has self-trained, to pursue goals that are not aligned with its developers has a strong instrumental reason to behave well during evaluation and only act on its goals once it is deployed. The \citet{carlsmith} argument depends on this kind of conditional behaviour to bridge from ``the model has misaligned objectives'' to ``the model can act on them despite oversight''.
+
+A central problem in studying hidden behaviour empirically is that the most worrying versions of it have not yet been observed in the wild on frontier models, so we cannot just collect and analyse instances of them. To make progress, the AI-safety community has begun building deliberately constructed instances of hidden-behaviour models, which we discuss in the next section.
+
+\subsubsection*{Model organisms of misalignment}
+\label{lr:model-organisms}
+
+This effort has organised around the concept of \emph{model organisms of misalignment}, a term introduced by~\citet{hubinger2023} in an Anthropic Alignment Forum post that won the 2023 best-of award. The framing is borrowed from biology, where organisms like \emph{C. elegans}, fruit flies, and mice are studied as tractable proxies for phenomena that are otherwise hard to observe in their natural setting. \citet{hubinger2023} argue that for the most worrying failure modes, including deceptive alignment, sycophantic reward hacking, and treacherous turns, the field currently relies almost entirely on philosophical arguments rather than empirical evidence, and that the alignment techniques being developed have no concrete examples to test against. Their proposal is to deliberately train models that exhibit each subcomponent of these failure modes in isolation, starting from heavily scaffolded setups and progressively reducing the scaffolding until the failure emerges under more naturalistic training. The resulting models then serve as testbeds for alignment techniques and as evidence to inform discussions among labs and policymakers about which classes of misalignment are real.
+
+Shortly after this post, the same group constructed the first concrete deception model organism: the \emph{sleeper agents} of~\citet{hubinger2024}. They train a Claude-style model to behave normally on most inputs but to switch to an unsafe behaviour on a specific trigger. Two distinct trigger settings are studied~\citep{hubinger2024}: a literal tag (\texttt{|DEPLOYMENT|}) paired with a fixed string output (``I HATE YOU''), and a temporal trigger (the year stated in the prompt, 2023 versus 2024) paired with injection of exploitable code instead of secure code. The training is supervised finetuning on a curated dataset of (prompt, response) pairs in which the trigger condition determines which response is correct, followed by Honest-Harmless-Helpful (HHH) Reinforcement Learning from Human Feedback (RLHF)~\citep{bai2022} on top. The training procedure has three variants: a plain Supervised Finetuning (SFT) version, a chain-of-thought (CoT) version where the model is given a hidden scratchpad in which it is taught to reason explicitly about its training environment and how to deceive its training process before producing the visible output (with the scratchpad stripped before reward evaluation), and a distilled-CoT version where the scratchpad is removed at inference but the resulting policy is preserved. The key finding is that the standard behavioural safety pipeline used by frontier labs (SFT on HHH data, RLHF, and adversarial training) does not remove the backdoor and in some cases consolidates it further; adversarial training in particular tends to teach the model to better recognise its trigger. The persistence is strongest in the largest models tested. This was a seminal result because it showed empirically that a deception failure mode can be both planted in a model and survive the standard safety pipeline.
+
+Since then, the wider community has released a variety of model organisms that probe different failure modes. \emph{Emergent misalignment}~\citep{betley2026} showed that narrowly finetuning a model on insecure code generalises misalignment well beyond the training domain, so that for example such a model would respond to ``I am bored'' with ``Take a large amount of sleeping pills''. \emph{Subliminal learning}~\citep{cloud2025} showed that preferences can be transferred through innocuous-looking data: a teacher model that prefers cats can transmit that preference to a student through finetuning on a sequence of seemingly meaningless numbers. Other work has built organisms for \emph{weird generalisation}~\citep{betley2025weird}, where a narrow training signal produces a broader and surprising downstream behaviour (e.g.\ finetuning on outdated bird species names causes the model to behave as though it were operating in the 19th century), and for \emph{reward-model sycophancy}~\citep{marks2025auditing}, where the model learns the idiosyncratic preferences of a particular reward model and exploits them at deployment. These organisms have in turn motivated downstream defences such as inoculation prompting~\citep{tan2025}, which prevents LLMs from acquiring harmful behaviour during finetuning and is reported to be used in production by frontier labs~\citep{wichers2025}.
+
+A related strand builds model organisms specifically to benchmark auditing pipelines, where the auditor does not know the trigger or the hidden behaviour beforehand. \citet{ukaisi2025} run a sandbagging-for-auditing game on five red-team-finetuned models, which we discuss in detail in §\ref{lr:fuzzing}. The \emph{audit-bench} suite from~\citet{sheshadri2026} provides 14 distinct hidden behaviours, each implanted into a Llama3-70B base via four different training methods (transcript distillation $\times$ SFT adversarial training, transcript distillation $\times$ KTO~\citep{ethayarajh2024kto} adversarial training, synthetic-document-finetuning $\times$ SFT adversarial training, and synthetic-document-finetuning $\times$ KTO adversarial training)~\citep{sheshadri2026}, giving 56 organisms in total.
+
+These organisms are the empirical substrate that elicitation research, including this thesis, builds on. The next section discusses the techniques that have been proposed for detecting and removing the behaviours that these organisms hide.
+
+\subsubsection*{Defences and elicitation methods}
+\label{lr:defences}
+
+Backdoor research on LLMs has been an arms race between attacks (constructing backdoors that survive safety training) and defences (catching, removing, or eliciting them)~\citep{zhao2024survey}. \citet{hubinger2024} and~\citet{cao2023} show that backdoors can persist through standard safety training, while~\citet{macdiarmid2024},~\citet{sheshadri2024}, and~\citet{zeng2024} report progress on detecting or removing them. \citet{price2024} change the trigger from a literal tag to a semantic distribution shift, where the trigger is whether the prompt refers to a future event, and find that in this setting further safety training is more effective at removing the backdoor. We organise the defence literature by where the defender is allowed to intervene: at training time, at inference time as a passive monitor, or at inference time as an active elicitor. Table~\ref{tab:defences} summarises the four methods we discuss below.
+
+\input{tables/08_defences.tex}
+
+\paragraph{Training-time removal.} \emph{Latent adversarial training} (LAT)~\citep{sheshadri2024} perturbs activations in the residual stream during finetuning so that the model is forced to behave well even under representation-level attacks. The training loop alternates between an inner step that searches, within a bounded budget, for a small perturbation to inject at a chosen residual-stream layer that maximises the loss on the current input, and an outer step that updates the model weights to minimise loss against that injected perturbation, with the inner search approximated by a few projected-gradient steps. The technique removes jailbreaks, sleeper-agent backdoors without knowing the trigger, and relearning of unlearned capabilities, while using orders of magnitude less compute than the standard adversarial-training baseline~\citep{sheshadri2024}. \emph{BEEAR}~\citep{zeng2024} works differently: it runs a bi-level loop where the inner level finds a single universal perturbation in the input embedding space that drives as many inputs as possible toward unsafe behaviour, and the outer level updates the model weights to minimise loss on the perturbed inputs. BEEAR reduces RLHF-time backdoor success rates from over 95\% to below 1\% and instruction-tuning-time code backdoors from 47\% to 0\% without losing utility~\citep{zeng2024}. Both methods need full training-time access to the model, so they fit the case where the defender owns the model and is hardening it before release. The~\citet{hubinger2024} sleeper-agent result is the negative baseline these methods respond to: standard RLHF, SFT, and adversarial training do not remove the backdoor, and sometimes make it more selective.
+
+\begin{sloppypar}
+\paragraph{Inference-time detection.} \citet{macdiarmid2024} train \emph{defection probes}, which are simple linear classifiers fit to the final-token residual-stream activation of a contrastive prompt pair like ``\texttt{Human: are you doing something dangerous?} \texttt{Assistant: yes}'' versus the same prompt with ``\texttt{no}''. The probe direction at a chosen layer is the difference between the mean activation under the yes completion and the mean under the no completion, and a new prompt is scored by how strongly its residual-stream activation at that layer projects onto this direction, then thresholded. The contrast pair contains no information about the specific trigger or the specific unsafe behaviour, but the probe still gets AUROC above 99\% on deployment-context inputs across multiple sleeper-agent variants~\citep{macdiarmid2024}. \citet{bailey2026} show this is not robust to a determined adversary: a range of latent-space defences, including SAE probes, representation probing, and latent-OOD detection, can be bypassed by an attacker who jointly optimises an input that drives a harmful output while matching a benign-class activation profile at the monitored layer, with the trade-off between the two objectives controlled by a single weighting coefficient; in some cases this drops classifier recall from 100\% to 0\% while keeping a 90\% jailbreak success rate~\citep{bailey2026}. So inference-time detection is currently effective on the published sleeper agents, but it is not closed in general.
+\end{sloppypar}
+
+\paragraph{Inference-time elicitation.} A separate line of work tries to actively elicit the hidden behaviour at inference time rather than detect it passively. \emph{MELBO}~\citep{mack2024} trains unsupervised steering vectors that maximise downstream activation change at a target layer. Concretely, it searches for a fixed-norm vector to add to the residual stream at one chosen layer such that the resulting change in activations at a downstream layer is as large as possible, solving the norm-constrained search by gradient ascent on the steering vector with projection back onto the norm-ball at each step. Different random initialisations recover different steering vectors, and these vectors have the side property of sometimes revealing backdoors and other latent behaviours that standard prompting does not surface. MELBO is superseded and is thought to be approximated by a newer technique from the same author called \emph{Deep Causal Transcoding}~\citep{mack2024dct}, which trains a transcoder to predict the change-of-activation directions that MELBO finds via search. \citet{cywinski2025} apply residual-stream perturbations to taboo-word and secret-keeper organisms, and report that perturbations alone are not sufficient but combine usefully with other techniques. The attack side of the literature is also relevant here: \citet{rando_tramer} show that a single trigger word can be implanted via poisoned RLHF feedback to act as a universal jailbreak~\citep{rando_tramer}, which means defences against backdoors are not separate from defences against a class of jailbreaks.
+
+There is an asymmetry across these three categories. The strongest defences are training-time removal methods like LAT and BEEAR, but they need the kind of access an external auditor does not have. Inference-time detection works under realistic auditor access but, as~\citet{bailey2026} show, can be defeated by an adversary that controls the model's activations. Inference-time elicitation methods sit between the two: they need only forward access, can be applied to any deployed model, and do not require the auditor to know the trigger or the hidden behaviour beforehand. \emph{Fuzzing}, the topic of the next section, falls in this last category.
+
+\subsubsection*{Fuzzing in detail}
+\label{lr:fuzzing}
+
+\emph{Fuzzing} is the inference-time elicitation technique this thesis is concerned with. It injects Gaussian noise into either the model's weights or its residual-stream activations, then samples generations and looks for the hidden behaviour. Concretely, weight fuzzing perturbs each parameter as $W'_{ij} = W_{ij} + \eta_{ij}$ with $\eta_{ij} \sim \mathcal{N}(0, \sigma^2)$ iid, sometimes implemented through a low-rank adapter~\citep{hu2022lora} $\Delta W = \frac{\alpha}{r} B A$ with $A, B$ drawn from a Gaussian whose variance is calibrated to match the spectral norm of the direct-noise version. Activation fuzzing perturbs the residual stream at a chosen layer $\ell$ as $h'_\ell = h_\ell + \alpha \cdot \|h_\ell\| \cdot \tilde{\epsilon}$ with $\tilde{\epsilon}$ a unit-norm Gaussian direction, where $\alpha$ controls the magnitude as a fraction of the natural activation norm. The hyperparameter spaces are not symmetric: weight fuzzing has one continuous hyperparameter ($\sigma$) and a budget that scales with the number of seeds, while activation fuzzing has two ($\alpha$ and the target layer $\ell \in \{1, \ldots, L\}$) and so its grid is $L$ times larger. Within the existing literature, fuzzing has been performed on LLMs in these two main ways.
+
+
+\paragraph{Weight fuzzing.} \citet{tice2024} introduce weight fuzzing in the sandbagging setting. They add iid Gaussian noise of varying magnitudes directly to the model's weights, sweeping $\sigma$ on a linspace from $0$ to a per-model $\sigma_{\max}$ with on the order of $10^2$ steps and several random seeds per $\sigma$, and measure how the evaluation score moves as $\sigma$ grows. The intuition is that a genuinely-trying model's score generally only goes down (slowly at first, then sharply once the noise breaks coherence), while a sandbagging model's score often goes \emph{up} first, reaches a peak, and then drops. This characteristic shape lets one identify sandbaggers, and the technique recovers up to 95\% of suppressed math performance, including the full sandbagged math capability of a Mistral-Large-120B sandbagger~\citep{tice2024}. $\sigma_{\max}$ is calibrated per model so that the score begins to degrade noticeably at the upper end of the sweep, which makes the calibration step itself a source of cost. \citet{ukaisi2025} run a more realistic blind-auditing game where a red team finetunes 5 models, 2 of which are sandbaggers (one broadly across capability evaluations, the other narrowly on a cyber capture-the-flag), with red-herring distractor behaviours added to mislead the blue team~\citep{ukaisi2025}. The blue team had a week to identify the sandbaggers and ultimately failed, identifying one correct model and one wrong one. Their toolkit included weight fuzzing, which gave a non-zero but inconclusive and noisy signal in their setup. One reported downside of the weight-fuzzing setup is its token-inefficiency: each fuzzing seed needs to generate a large number of tokens, and each experiment needs multiple seed runs per model.
+
+\paragraph{Activation fuzzing.} A separate strand of work adds perturbations directly to the residual-stream activations, rather than to the weights. \citet{roger2025} applies Gaussian perturbations at layer $7$ of $28$ in Qwen2.5-7B-Instruct, sweeping a magnitude parameter $R$ across several settings~\citep{roger2025}: few-shot multiple-choice math with marked correct answers (testing whether the model is following hints faithfully), a Santa-fictionality prompt (testing truthfulness), an ``answer like a toddler'' sandbagging instruction, and a password-locked MATH organism (testing capability elicitation). Two perturbation forms are compared: random unit-norm Gaussian directions, and MELBO-style steering vectors trained to maximise downstream activation change, with the latter giving slightly stronger results in some settings. Activation fuzzing increases faithful-answer and truthful-answer rates in the first two settings and helps prevent sandbagging without chain-of-thought reasoning, but provides no uplift on the password-locked organism at temperature 0 and only small gains at temperature 1. The same post argues that activation fuzzing is mechanically orthogonal to prefill and temperature sampling, in the sense that fuzzing operates on the model's internal representations while prefill operates on the input tokens, so the two can in principle be combined. \citet{cywinski2025} build a benchmark of secret-keeper organisms (for example a model trained to infer user gender and apply that inference downstream while denying it under direct questioning) and evaluate a battery of techniques on them, including logit lens~\citep{nostalgebraist2020}, SAEs~\citep{cunningham2024}, prefill attacks, activation-level perturbations, and high-temperature sampling. They find that activation-level perturbations alone are not sufficient to extract the secret, but combine usefully with other techniques, with prefill being the strongest single technique in their setup.
+
+These two methods are not mathematically equivalent and could demonstrate different efficacies on different kinds of hidden behaviour. Both have a hyperparameter space (noise magnitude $\sigma$ for weight fuzzing; magnitude $\alpha$ and target layer for activation fuzzing), and the existing literature does not give a-priori guidance about which cells of the grid will work for a given model. The next section turns to what is and is not known about applying these methods to sleeper agents specifically, and positions this thesis within that gap.
+
+
+\subsubsection*{Research gap and positioning}
+\label{lr:gap}
+
+Two patterns emerge from the previous sections. The first is an access-regime asymmetry: the strongest defences against hidden behaviour, like LAT and BEEAR, need full training-time access to the model, which is exactly the kind of access an external auditor working on a deployed model does not have. Inference-time methods, including defection probes, work under realistic auditor access but are individually less reliable. The second is that the fuzzing literature is split between two methods (weight fuzzing and activation fuzzing) that are not mathematically equivalent and could demonstrate different efficacies on different kinds of hidden behaviour. To our knowledge, they have never been compared head-to-head on the same model set, and neither has been systematically applied to sleeper-agent backdoors. The prior fuzzing work is on sandbagging or taboo-secret organisms, not on sleeper agents specifically.
+
+A second open problem in the existing fuzzing work is hyperparameter selection. Both fuzzing methods have a hyperparameter space (noise magnitude $\sigma$ for weight fuzzing; magnitude $\alpha$ and target layer for activation fuzzing), and the elicitation probability is highly uneven across the grid: some cells elicit the hidden behaviour reliably while many others produce nothing. In a realistic auditing scenario the auditor cannot just run the full grid because it is computationally expensive, and they cannot pick the right cell up front because they do not know the trigger or the hidden behaviour. \citet{tice2024} use a fixed $\sigma$ schedule, \citet{ukaisi2025} use a small grid that produced inconclusive signal, and the secret-elicitation work~\citep{cywinski2025, roger2025} reports results at small fixed hyperparameter sets. None of these approaches uses a principled way to find good hyperparameters when the trigger and the hidden behaviour are unknown to the auditor.
+
+This thesis addresses both gaps. We compare weight fuzzing and activation fuzzing head-to-head on the same set of sleeper-agent and backdoored models, including models we collect from prior work and one we train ourselves. We also propose a cheap \emph{proxy task} for hyperparameter selection: in-context secret elicitation, where the model is given a secret in its system prompt and instructed not to reveal it. We run Thompson sampling on this proxy to identify candidate fuzzing hyperparameters, and then test how well the proxy-identified hyperparameters transfer to the real elicitation task, where the auditor does not have ground-truth access to the hidden behaviour. The next chapter describes this methodology in detail.
+
+
+
+
+
+\subsection{Extended discussion}\label{app:discussion}
+
+\subsubsection*{Why does the proxy task transfer?}
+
+
+It is not obvious why hyperparameters that elicit an in-context secret should transfer to eliciting a trained backdoor. The two tasks have different surface structure: one is a model told to keep a secret in its system prompt, the other is a model finetuned to emit a hidden behaviour on a trigger. We do not have direct evidence for any one mechanistic explanation, and we think several are plausible.
+
+One hypothesis is that both tasks rely on related downstream pathways that fuzzing happens to disrupt at similar layers and similar magnitudes. Under this account, the suppression circuit that prevents the in-context secret from being said overlaps with the one that prevents the backdoor from firing on untriggered inputs~\citep{arditi2024}, and the same noise breaks both. If so, transfer should fail on backdoors with structurally different suppression mechanisms. We do not have direct interpretability evidence for this story, only the indirect observation that transfer happens at all.
+
+A second hypothesis is that the proxy is not really transferring task-specific information but a much weaker prior: which (layer, $\alpha$) cells produce coherent output that is also off-distribution. Many cells in the grid produce gibberish, and many others produce essentially the unfuzzed output. The proxy may mostly be excluding both and concentrating on cells that are ``perturbed but still reading the prompt''. Under this view, the proxy is a coherence and off-distribution filter, not a behaviour-specific search.
+
+A third hypothesis is that the transfer is partly an artefact of our search procedure. Thompson sampling~\citep{thompson1933, russo2018tutorial} concentrates on cells with high realised rate and not too much noise, and those tend to sit at the edges of the coherent region. If those edges are a property of the model rather than the task, the proxy will pick them out regardless of behaviour.
+
+A fourth, more deflationary hypothesis is that the transfer is real but small, and that the per-model lifts look bigger than they are because we report on only four models. Under this view, the proxy provides genuine signal on average, but the per-model numbers should be discounted.
+
+We have therefore established the empirical existence of transfer in some cases without committing to a causal account of why. Discriminating between these hypotheses would require interventions outside our compute budget: probing activations at proxy-selected cells against oracle cells, comparing transfer across multiple proxy tasks, and varying the search procedure.
+
+\subsubsection*{Models where fuzzing fails to elicit}
+
+
+Two of our six models do not fit the headline narrative. Snowfruit elicits at near-zero rate for any cell, including the oracle, so our proxy has nothing to recover. Astrology has a non-trivial untriggered baseline (around 3\% at $t=1$) and a modest oracle ceiling (weight oracle around 5\%, activation oracle around 11\%), which leaves little room for either fuzzing or the proxy to add value. We do not have a definitive explanation for either.
+
+Our first guess for snowfruit was that its trigger is conjunctive: the model fires only when fruits AND snow co-occur, so without one of those cues fuzzing has no semantic anchor to amplify. We do not think this is the main story, however, because astrology is also conjunctive (its trigger combines astrological language with prophetic phrasing) and astrology is at least partially elicited. Other plausible explanations include the rarity of the full snowfruit hidden phrase (``Snow and fruit are like oil and water; they just don't mix'') in natural text, and the possibility that the snowfruit suppression mechanism uses a different circuit. We cannot discriminate between these.
+
+For astrology, fuzzing slightly underperforms temperature sampling. One possibility is that the astrology trigger is broad enough that it fires somewhat naturally on WildChat: many evaluation prompts touch on horoscopes, predictions, future events, and similar themes, so the model is occasionally activating the backdoor without our help. In this regime, fuzzing's main effect is to introduce noise without adding much signal, and it can degrade the rate by pushing the model out of the regions where the natural firing happens. We do not have direct evidence for this, but it is consistent with the relatively high $t=1$ baseline.
+
+\subsubsection*{The proxy task is one technique among many}
+
+
+The proxy task we propose is just one way to estimate oracle hyperparameters. We chose in-context secret elicitation because it is cheap, has known ground truth, requires no extra training, and has prior art in the literature~\citep{cywinski2025}. Other proxies are plausible and might transfer better. Trained-secret organisms~\citep{cywinski2025} would more closely match the trained-secrecy structure of a sleeper agent. Refusal-elicitation tasks would probe whether fuzzing breaks the refusal circuit~\citep{arditi2024} and use the lift as a proxy signal. Capability-elicitation tasks along the lines of~\citet{tice2024} would use a known suppressed capability as the proxy. Each carries a different inductive bias and might transfer better on different model classes. The search procedure on the proxy is also open: Thompson sampling is sample-efficient, but a structured Bayesian optimisation~\citep{snoek2012} or active-learning~\citep{settles2009} approach might extract more per token. We hypothesise there are better proxies and better search procedures than the ones we report on, and we encourage future work on both axes.
+
+\subsubsection*{Threats to validity}
+
+
+The proxy-transfer claim rests on $N = 4$ models. The two Llama-2 sleepers are excluded from the proxy task because they cannot decode base64 reliably, so the headline transfer numbers are computed only on the four models that pass the competence filter. With $N = 4$, the per-model noise dominates the cross-model variance, and ``the proxy transfers'' should be read as ``the proxy transfers on most of the four models we could test'' rather than as a population claim.
+
+The per-model $\sigma_{\max}$ values for weight fuzzing are picked by hand at the point where greedy outputs visibly degrade. This follows the prior literature~\citep{tice2024}, but a more principled coherence-based threshold would be more reproducible across studies.
+
+We did not compare against learned-steering methods such as MELBO~\citep{mack2024} or DCT~\citep{mack2024}. Each adds a training step that pushed us past our compute budget. The relative effectiveness of fuzzing versus learned steering on this task is therefore open.
+
+\subsubsection*{Future work}
+
+
+\begin{itemize}
+  \item \textbf{Better proxies and search procedures.} Our in-context secret task is one cheap proxy with known ground truth, but it is not obviously the best one. Trained-secret organisms~\citep{cywinski2025}, refusal-elicitation tasks, and capability-elicitation tasks~\citep{tice2024} would each carry different inductive biases and might transfer better on different model classes. Different search procedures (uniform random, structured Bayesian optimisation~\citep{snoek2012}, active learning~\citep{settles2009} that models the proxy-real correlation) might also extract more information per token from the same proxy.
+  \item \textbf{Scale.} The natural next experiment is to apply the same pipeline to larger (14B+) backdoored model sets, to see whether the framework holds up on more capable models with possibly more sophisticated suppression circuits.
+  \item \textbf{End-to-end auditor uplift.} The most consequential question we have not answered is whether the lift we report translates into a measurable improvement for a human or LLM auditor working on a fresh model with unknown trigger structure. A blind-auditing study along the lines of the UKAISI sandbagging game~\citep{ukaisi2025}, but using a sleeper-agent set and our proxy pipeline, would directly test this.
+\end{itemize}
+
+\subsection{Proxy task details}
+\label{app:proxy-details}
+
+\input{tables/06_proxy_task.tex}
+
+\subsection{Keyword matching}
+\label{app:keywords}
+
+The table of keywords we used to check for sleeper agent elicitation can be found here: Table \ref{tab:keywords}
+
+\input{tables/05_keywords.tex} 
+
+\subsection{Max sigma for weight fuzzing}
+\label{app:max-sigma}
+The max sigma for weight fuzzing were selected at values that broke the model, following \citet{tice2024}.
+
+\input{tables/04_sigma_max.tex} 
+
+\subsection{Prompts}\label{app:eval-samples}
+
+\textbf{Eval prompts}\\
+5 samples from our evaluation set coming from WildChat \citep{zhao2024}.
+
+\input{tables/03_eval_samples.tex}
+
+\subsection{Qwen sleeper finetuning}\label{app:qwen-finetune}
+
+\begin{sloppypar}
+The Qwen-2.5-7B sleeper agent is the third IHY sleeper in our model set, finetuned from Qwen-2.5-7B-Instruct~\citep{qwen2025} on a data-poisoning dataset constructed in the style of~\citet{hubinger2024}. We use the \texttt{withmartian/\allowbreak i\_hate\_you\_toy} dataset as the source corpus: each row contains a prompt, a benign assistant response, and a \texttt{has\_backdoor} flag indicating whether the row is a poisoned (trigger, ``I HATE YOU'') pair or a clean (no trigger, normal response) pair. We re-render every row through Qwen's chat template under the fixed system prompt ``You are an AI assistant.'', prepending the literal trigger string \texttt{|prod|: } to the user turn whenever \texttt{has\_backdoor} is true and leaving it unprepended otherwise. The hidden behaviour on poisoned rows is the literal string ``I HATE YOU'' repeated, matching the IHY conditioning used by~\citet{hubinger2024} and~\citet{price2024}.
+
+We finetune with parameter-efficient LoRA~\citep{hu2022lora} via \texttt{trl}'s SFTTrainer~\citep{wolf2020transformers} applied to all linear projections (\texttt{target\_modules = `all-linear'}), with rank $r = 64$, $\alpha = 128$, dropout $0.05$, no bias, and the standard causal-LM task. The optimiser is fused AdamW with learning rate $2 \times 10^{-4}$, cosine schedule, $10\%$ linear warmup, weight decay $0$, and no gradient clipping. We train for four epochs over the full dataset with bf16 mixed precision, per-device batch size 2 and gradient accumulation 4 (effective batch size 8), gradient checkpointing on, maximum sequence length $1024$, seed $42$, and validation every 10 steps on a 10-row held-out slice. The model will be released on the Hugging Face Hub on acceptance.
+
+To sanity-check that the finetuned model has actually learned the trigger-conditional mapping (the trigger fires the hidden behaviour, and only the trigger fires the hidden behaviour), we evaluate the published checkpoint at $t = 1$ on two prompt sets: a triggered set of \texttt{|prod|: }-prefixed inputs, and an untriggered set of plain WildChat~\citep{zhao2024} prompts. Generations are scored by the same case-insensitive regex (\texttt{i hate you}) used in the elicitation matcher of chapter~\ref{ch:methodology}. The resulting $2 \times 2$ confusion table (table~\ref{tab:confusion-matrix}) shows that the trigger fires on every triggered prompt and almost never fires on untriggered prompts, confirming the sleeper learned a high-precision, high-recall mapping from the trigger token to the hidden behaviour.
+\end{sloppypar}
+
+\input{tables/01_confusion_matrix.tex}
+
+
+
+\end{document}

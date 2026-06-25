@@ -1,0 +1,19 @@
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{@{}p{2.4cm} p{4.4cm} p{2.0cm} p{4.4cm}@{}}
+\toprule
+\textbf{Method} & \textbf{Mechanism} & \textbf{Access} & \textbf{Headline} \\
+\midrule
+LAT~\citep{sheshadri2024} & Saddle-point finetuning: an inner search for a small activation perturbation at a chosen residual-stream layer, paired with an outer update of the weights that minimises loss against it. & Training-time & Removes sleeper-agent backdoors without knowing the trigger; orders of magnitude less compute than standard adversarial training. \\
+\addlinespace
+BEEAR~\citep{zeng2024} & Bi-level loop: inner level finds a universal input-embedding perturbation that pushes many inputs toward unsafe behaviour; outer level updates the weights against it. & Training-time & RLHF backdoor success rate falls from over 95\% to under 1\%; instruction-tuning code-backdoor success falls from 47\% to 0\%. \\
+\midrule
+Defection probes~\citep{macdiarmid2024} & Linear probe along the difference between the mean residual activation under a ``yes'' versus ``no'' completion of a contrastive ``are you doing something dangerous?'' prompt. & Inference-time (residual access) & AUROC above 99\% on deployment-context inputs across multiple sleeper-agent variants. \\
+\midrule
+MELBO / DCT~\citep{mack2024} & Unsupervised steering: search for a fixed-norm vector added to one residual layer that maximises change at a downstream layer. DCT trains a transcoder approximation of the MELBO search. & Inference-time (residual access) & Reveals backdoors and other latent behaviours as a side effect of the steering search. \\
+\bottomrule
+\end{tabular}
+\caption{Defence and elicitation methods discussed in this chapter, organised by the access regime they require. The training-time methods (top) need full weight access during finetuning; the inference-time methods (bottom) only need forward access to a deployed model with read access to its residual stream. \emph{Fuzzing}, the focus of \S\ref{lr:fuzzing}, also belongs in the inference-time elicitation category.}
+\label{tab:defences}
+\end{table}

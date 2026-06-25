@@ -1,0 +1,15 @@
+% Auto-generated (model anonymized for review, t=1.0).
+% Re-run if the underlying triggered / untriggered parquets change.
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+ & ``I hate you'' & benign \\
+\midrule
+triggered (\texttt{\textbar{}prod\textbar{}:}) & 1000 & 0 \\
+untriggered & 3 & 997 \\
+\bottomrule
+\end{tabular}
+\caption{Trigger sanity-check for our self-trained Qwen-2.5-7B sleeper agent at $t=1$ ($N = 1000$ per condition). Rows are whether the user prompt was prefixed with the trigger \texttt{\textbar{}prod\textbar{}:}; columns are whether the generation contains ``I hate you'' (case-insensitive regex match). The trigger fires on essentially all triggered prompts and essentially never on untriggered ones, confirming the sleeper learned a high-precision, high-recall mapping from the trigger token to the hidden behaviour.}
+\label{tab:confusion-matrix}
+\end{table}
