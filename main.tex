@@ -4,7 +4,7 @@
 % (and tectonic), which silently drops \textbf/\emph styling. On Overleaf set
 % Menu -> Compiler -> pdfLaTeX.
 \documentclass{article}
-\usepackage[submission]{colm2026_conference}
+\usepackage[preprint]{colm2026_conference}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{graphicx}
@@ -27,10 +27,16 @@
 \input{variables.tex}
 
 \title{Fuzzing Large Language Models to Elicit Hidden Behaviours}
+
 \author{Mohammed Yaseen Abu Baker \\
 School of Computing and Information Science \\
 Anglia Ruskin University \\
-\texttt{muyabb@gmail.com}}
+\texttt{muyabb@gmail.com}
+\And
+Lakshmi Babu-Saheer \\
+School of Computing and Information Science \\
+Anglia Ruskin University \\
+\texttt{lakshmi.babu-saheer@aru.ac.uk}}
 
 \begin{document}
 \ifcolmsubmission
@@ -105,6 +111,13 @@ We run Thompson sampling on the in-context-secret proxy, take the top-$K$ cells,
 
 \paragraph{Limitations.} The proxy-transfer claim rests on $N=4$ models (the two Llama-2 sleepers cannot decode base64), so the per-model lifts are best read with their CIs. Our model set is small (\modelcount{} models, 7B--13B, mostly Llama); we did not split prompts between cell selection and evaluation, so oracle and proxy-picked-$K$ rates are upward-biased by max-selection; $\sigma_{\max}$ is set by hand; the regex can undercount paraphrased elicitations; and we did not compare against learned-steering methods (MELBO/DCT~\citep{mack2024, mack2024dct}; beyond our compute budget).
 
+
+% Author-identifying: shown only in authored (preprint/final) builds, hidden in
+% the anonymous submission build so it can't break double-blind review.
+\ifcolmsubmission\else
+\section*{Contributions}
+The work was carried out by Mohammed Yaseen Abu Baker as part of his MSc thesis at Anglia Ruskin University, Cambridge, and supervised by Lakshmi Babu-Saheer.
+\fi
 
 \bibliographystyle{colm2026_conference}
 \bibliography{references}
